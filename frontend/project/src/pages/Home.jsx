@@ -12,9 +12,6 @@ export default function Home() {
   const [history,    setHistory]    = useState([]);
   const [inputLatLng, setInputLatLng] = useState(null);
 
-  // Default map pin: center of Indian EEZ
-  const DEFAULT_LAT = 15.0, DEFAULT_LNG = 80.0;
-
   useEffect(() => {
     getHistory().then(setHistory).catch(() => {});
   }, [result]);
@@ -22,11 +19,25 @@ export default function Home() {
   const handlePredict = async (params) => {
     setLoading(true); setError(""); setResult(null);
     try {
-      // Attach a random Indian EEZ location if user hasn't set one
-      const lat = params.latitude  || DEFAULT_LAT + (Math.random() - 0.5) * 4;
-      const lng = params.longitude || DEFAULT_LNG + (Math.random() - 0.5) * 4;
-      const res = await predictFish({ ...params, latitude: lat, longitude: lng });
-      console.log("Prediction response:", res);   // ← check browser console
+      // Generate a random Indian EEZ location
+      const lat = parseFloat((15.0 + (Math.random() - 0.5) * 16).toFixed(6)); // 7°N – 23°N
+      const lng = parseFloat((80.0 + (Math.random() - 0.5) * 22).toFixed(6)); // 69°E – 91°E
+
+      const payload = {
+        temperature:  Number(params.temperature),
+        salinity:     Number(params.salinity),
+        oxygen:       Number(params.oxygen),
+        chlorophyll:  Number(params.chlorophyll),
+        month:        Number(params.month),
+        depth:        Number(params.depth),
+        latitude:     lat,
+        longitude:    lng,
+      };
+
+      console.log("Sending payload:", payload); // debug
+      const res = await predictFish(payload);
+      console.log("Response:", res);            // debug
+
       setResult(res);
       setInputLatLng([lat, lng]);
     } catch (e) {

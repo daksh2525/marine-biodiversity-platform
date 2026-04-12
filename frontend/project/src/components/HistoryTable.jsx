@@ -40,7 +40,8 @@ export default function HistoryTable({ records = [], onDelete, deleting }) {
     if (sortKey === "date")       { va = new Date(a.createdAt);    vb = new Date(b.createdAt); }
     else if (sortKey === "abundance") { va = a.fish_abundance;     vb = b.fish_abundance; }
     else if (sortKey === "temp")  { va = a.input?.temperature ?? 0; vb = b.input?.temperature ?? 0; }
-    else if (sortKey === "depth") { va = a.input?.depth ?? 0;       vb = b.input?.depth ?? 0; }
+    else if (sortKey === "lat") { va = a.latitude ?? 0;  vb = b.latitude ?? 0; }
+    else if (sortKey === "lng") { va = a.longitude ?? 0; vb = b.longitude ?? 0; }
     return sortDir === "asc" ? va - vb : vb - va;
   });
 
@@ -57,9 +58,11 @@ export default function HistoryTable({ records = [], onDelete, deleting }) {
 
   // ── CSV Export ──────────────────────────────────────────────────────────────
   const exportCSV = () => {
-    const header = ["Date","Temp(°C)","Salinity","O2","Chl-a","Month","Depth(m)","Abundance(kg/km2)","RF","XGB","Category"];
+    const header = ["Date","Lat","Lng","Temp(°C)","Salinity","O2","Chl-a","Month","Depth(m)","Abundance(kg/km2)","RF","XGB","Category"];
     const rows = sorted.map((r) => [
       new Date(r.createdAt).toLocaleString(),
+      r.latitude  ?? "",
+      r.longitude ?? "",
       r.input?.temperature ?? "",
       r.input?.salinity    ?? "",
       r.input?.oxygen      ?? "",
@@ -152,6 +155,8 @@ export default function HistoryTable({ records = [], onDelete, deleting }) {
               <th>#</th>
               <th className="sortable" onClick={() => handleSort("date")}>Date{arrow("date")}</th>
               <th className="sortable" onClick={() => handleSort("temp")}>Temp (°C){arrow("temp")}</th>
+              <th className="sortable" onClick={() => handleSort("lat")}>Lat{arrow("lat")}</th>
+              <th className="sortable" onClick={() => handleSort("lng")}>Lng{arrow("lng")}</th>
               <th>Salinity</th>
               <th>O₂</th>
               <th>Chl-a</th>
@@ -178,7 +183,9 @@ export default function HistoryTable({ records = [], onDelete, deleting }) {
                 <tr key={r._id}>
                   <td>{(page - 1) * PER_PAGE + i + 1}</td>
                   <td>{new Date(r.createdAt).toLocaleString()}</td>
-                  <td>{r.input?.temperature ?? "—"}</td>
+                                      <td>{r.input?.temperature ?? "—"}</td>
+                    <td>{r.latitude  != null ? r.latitude.toFixed(4)  : "—"}</td>
+                    <td>{r.longitude != null ? r.longitude.toFixed(4) : "—"}</td>
                   <td>{r.input?.salinity    ?? "—"}</td>
                   <td>{r.input?.oxygen      ?? "—"}</td>
                   <td>{r.input?.chlorophyll ?? "—"}</td>

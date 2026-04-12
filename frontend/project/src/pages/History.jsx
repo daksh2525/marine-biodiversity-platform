@@ -9,25 +9,30 @@ export default function History() {
   const [deleting, setDeleting] = useState(null);
 
   // Safe transform — normalizes any API response shape
-  const safeTransform = (data = []) =>
-    data
-      .filter((item) => item?.input && item?.fish_abundance > 0) // skip corrupt docs
-      .map((item) => ({
+  const safeTransform = (data = []) => {
+    console.log("Raw records from API:", data); // ← debug
+    return data.map((item) => {
+      console.log("Processing item:", item);    // ← debug each record
+      return {
         _id:            item._id || item.id || String(Math.random()),
         input: {
-          temperature:  Number(item.input.temperature),
-          salinity:     Number(item.input.salinity),
-          oxygen:       Number(item.input.oxygen),
-          chlorophyll:  Number(item.input.chlorophyll),
-          depth:        Number(item.input.depth),
-          month:        Number(item.input.month),
+          temperature:  Number(item?.input?.temperature ?? 0),
+          salinity:     Number(item?.input?.salinity    ?? 0),
+          oxygen:       Number(item?.input?.oxygen      ?? 0),
+          chlorophyll:  Number(item?.input?.chlorophyll ?? 0),
+          depth:        Number(item?.input?.depth       ?? 0),
+          month:        Number(item?.input?.month       ?? 1),
         },
-        fish_abundance: Number(item.fish_abundance),
-        rf_prediction:  Number(item.rf_prediction  ?? 0),
-        xgb_prediction: Number(item.xgb_prediction ?? 0),
-        category:       item.category ?? "Low",
-        createdAt:      item.createdAt ?? new Date().toISOString(),
-      }));
+        fish_abundance: Number(item?.fish_abundance  ?? 0),
+        rf_prediction:  Number(item?.rf_prediction   ?? 0),
+        xgb_prediction: Number(item?.xgb_prediction  ?? 0),
+        category:       item?.category               ?? "Low",
+        latitude:       item?.latitude               ?? null,
+        longitude:      item?.longitude              ?? null,
+        createdAt:      item?.createdAt              ?? new Date().toISOString(),
+      };
+    });
+  };
 
   const fetchHistory = async () => {
     try {
@@ -41,7 +46,7 @@ export default function History() {
   };
 
   useEffect(() => {
-    setLoading(true);  
+    setLoading(true);  // ✅ safe — directly inside useEffect body
     fetchHistory();
   }, []);
 
