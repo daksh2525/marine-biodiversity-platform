@@ -1,0 +1,180 @@
+/* ── Page ────────────────────────────────────────────────────────────────── */
+.species-page { padding: 1.5rem; max-width: 1300px; margin: auto; }
+
+.species-header { text-align: center; margin-bottom: 2rem; }
+.species-header h1 { font-size: 2rem; color: #1e90ff; }
+.species-header p  { color: #90caf9; margin-top: .4rem; }
+
+/* ── Grid ────────────────────────────────────────────────────────────────── */
+.species-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  align-items: start;
+}
+@media (max-width: 860px) { .species-grid { grid-template-columns: 1fr; } }
+
+/* ── Drop Zone ───────────────────────────────────────────────────────────── */
+.drop-zone {
+  border: 2px dashed #1e3a5a;
+  border-radius: 16px;
+  min-height: 260px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: all .2s; background: #1a2d44;
+  overflow: hidden;
+}
+.drop-zone:hover,
+.drop-zone.drag-over { border-color: #1e90ff; background: #0d3358; }
+.drop-zone.has-preview { cursor: default; border-style: solid; border-color: #1e90ff; }
+
+.drop-hint { text-align: center; padding: 2rem; }
+.drop-icon  { font-size: 3.5rem; }
+.drop-hint p { color: #90caf9; margin: .4rem 0; }
+.drop-sub    { font-size: .85rem; color: #607d8b; }
+.drop-formats{ font-size: .75rem; color: #455a64; margin-top: .5rem; }
+
+/* ── Preview ─────────────────────────────────────────────────────────────── */
+.preview-wrapper { position: relative; width: 100%; }
+.fish-preview    { width: 100%; max-height: 340px; object-fit: cover; border-radius: 14px; display: block; }
+.btn-clear {
+  position: absolute; top: 8px; right: 8px;
+  background: rgba(0,0,0,.65); border: none; color: #fff;
+  padding: .3rem .7rem; border-radius: 8px; cursor: pointer; font-size: .82rem;
+}
+.btn-clear:hover { background: #c62828; }
+
+/* ── Buttons ─────────────────────────────────────────────────────────────── */
+.btn-browse {
+  width: 100%; margin-top: .8rem; padding: .7rem;
+  background: #0d3358; border: 1px solid #1e90ff;
+  color: #90caf9; border-radius: 10px; cursor: pointer; font-size: .9rem;
+}
+.btn-browse:hover { background: #1e3a5a; }
+
+.btn-identify {
+  width: 100%; margin-top: .8rem; padding: .9rem;
+  background: linear-gradient(135deg, #1e90ff, #0d47a1);
+  border: none; border-radius: 10px; color: #fff;
+  font-size: 1rem; font-weight: 700; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; gap: .5rem;
+  transition: opacity .2s;
+}
+.btn-identify:hover:not(:disabled) { opacity: .88; }
+.btn-identify:disabled { opacity: .5; cursor: not-allowed; }
+
+.species-error {
+  background: #4a1010; border: 1px solid #c62828;
+  border-radius: 8px; padding: .7rem 1rem;
+  color: #ff8a80; margin-top: .6rem; font-size: .88rem;
+}
+
+/* ── Spinner ─────────────────────────────────────────────────────────────── */
+.spinner, .big-spinner {
+  border: 3px solid rgba(255,255,255,.2);
+  border-top-color: #fff;
+  border-radius: 50%; animation: spin .7s linear infinite;
+}
+.spinner     { width: 16px; height: 16px; }
+.big-spinner { width: 48px; height: 48px; margin: 0 auto 1rem; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Result placeholder ──────────────────────────────────────────────────── */
+.result-placeholder {
+  background: #1a2d44; border-radius: 16px;
+  min-height: 280px; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: .5rem;
+  color: #607d8b; text-align: center; padding: 2rem;
+}
+.result-placeholder span { font-size: 4rem; }
+
+/* ── Result Card ─────────────────────────────────────────────────────────── */
+.result-card-species {
+  background: #1a2d44; border-radius: 16px; padding: 1.5rem;
+  box-shadow: 0 4px 20px rgba(0,0,0,.4);
+  border-top: 3px solid #1e90ff;
+}
+
+.result-top {
+  display: flex; justify-content: space-between;
+  align-items: flex-start; gap: 1rem; margin-bottom: 1rem;
+}
+.result-names h2       { font-size: 1.5rem; color: #fff; margin-bottom: .2rem; }
+.scientific-name       { color: #90caf9; font-size: .95rem; }
+.conservation-badge {
+  padding: .3rem .8rem; border-radius: 20px; color: #fff;
+  font-size: .75rem; font-weight: 700; white-space: nowrap; flex-shrink: 0;
+}
+
+/* ── Confidence bar ──────────────────────────────────────────────────────── */
+.confidence-section { margin: 1rem 0; }
+.confidence-label {
+  display: flex; justify-content: space-between;
+  font-size: .85rem; color: #90caf9; margin-bottom: .4rem;
+}
+.confidence-label strong { color: #fff; font-size: 1rem; }
+.confidence-bar-bg {
+  background: #0d1b2a; border-radius: 10px; height: 10px; overflow: hidden;
+}
+.confidence-bar-fill { height: 100%; border-radius: 10px; transition: width .8s ease; }
+
+/* ── Info grid ───────────────────────────────────────────────────────────── */
+.info-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: .8rem; margin: 1rem 0;
+}
+.info-item {
+  background: #0d1b2a; border-radius: 10px; padding: .6rem .9rem;
+  display: flex; flex-direction: column; gap: .2rem;
+}
+.info-item span  { font-size: .75rem; color: #90caf9; }
+.info-item strong { font-size: .88rem; color: #e0e6ed; }
+
+/* ── Description ─────────────────────────────────────────────────────────── */
+.species-description {
+  color: #b0bec5; font-size: .88rem; line-height: 1.6;
+  margin: .8rem 0; padding: .8rem; background: #0d1b2a; border-radius: 10px;
+}
+
+/* ── Top 3 ───────────────────────────────────────────────────────────────── */
+.top3-section { margin-top: 1.2rem; }
+.top3-section h4 { color: #90caf9; font-size: .85rem; margin-bottom: .6rem; }
+.top3-row {
+  display: grid; grid-template-columns: 24px 1fr 120px 48px;
+  align-items: center; gap: .6rem; margin-bottom: .5rem;
+}
+.top3-rank { color: #607d8b; font-size: .78rem; text-align: center; }
+.top3-name { color: #e0e6ed; font-size: .82rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.top3-bar-bg  { background: #0d1b2a; border-radius: 6px; height: 7px; overflow: hidden; }
+.top3-bar-fill { height: 100%; background: #1e90ff; border-radius: 6px; transition: width .6s; }
+.top3-pct { color: #90caf9; font-size: .78rem; text-align: right; }
+
+/* ── History section ─────────────────────────────────────────────────────── */
+.species-history-section { margin-top: 2.5rem; }
+.btn-toggle-history {
+  width: 100%; padding: .75rem;
+  background: #1a2d44; border: 1px solid #1e3a5a;
+  color: #90caf9; border-radius: 10px; cursor: pointer;
+  font-size: .9rem; transition: all .2s;
+}
+.btn-toggle-history:hover { border-color: #1e90ff; color: #1e90ff; }
+
+.species-history { margin-top: 1rem; }
+.history-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 1rem;
+}
+.history-card {
+  background: #1a2d44; border-radius: 12px; padding: 1rem;
+  border: 1px solid #1e3a5a; transition: border-color .2s;
+}
+.history-card:hover { border-color: #1e90ff; }
+
+.hc-top {
+  display: flex; justify-content: space-between; align-items: flex-start;
+  margin-bottom: .5rem;
+}
+.hc-top strong { color: #fff; font-size: .95rem; display: block; }
+.hc-top em     { color: #90caf9; font-size: .78rem; }
+.hc-meta { display: flex; align-items: center; gap: .6rem; flex-wrap: wrap; margin-top: .5rem; }
+.hc-conf { color: #90caf9; font-size: .8rem; }
+.hc-date { color: #455a64; font-size: .72rem; margin-top: .5rem; }

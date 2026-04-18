@@ -1,4 +1,4 @@
-# ── OS Files ──────────────────────────────────────────────────────────────────
+# ── OS Files ─────────────────────────────────────────────
 .DS_Store
 .DS_Store?
 ._*
@@ -8,7 +8,7 @@ ehthumbs.db
 Thumbs.db
 desktop.ini
 
-# ── Node.js (Frontend + Backend) ──────────────────────────────────────────────
+# ── Node.js (Frontend + Backend) ─────────────────────────
 node_modules/
 npm-debug.log*
 yarn-debug.log*
@@ -17,41 +17,38 @@ pnpm-debug.log*
 .npm
 .yarn/
 
-# ── Environment Variables ──────────────────────────────────────────────────────
-.env
-.env.local
-.env.development
-.env.development.local
-.env.test.local
-.env.production
-.env.production.local
+# IMPORTANT: Keep package-lock.json tracked
+# package-lock.json ❌ (do NOT ignore)
 
-# ── React / Vite Build Output ─────────────────────────────────────────────────
+# ── Environment Variables ────────────────────────────────
+.env
+.env.*
+!.env.example
+
+# ── Build / Dist ─────────────────────────────────────────
+dist/
+build/
 client/build/
-client/dist/
 frontend/dist/
-frontend/vite-project/dist/
 .vite/
 
-# ── Python ────────────────────────────────────────────────────────────────────
+# ── Python ──────────────────────────────────────────────
 __pycache__/
 *.py[cod]
 *$py.class
 *.pyo
 *.pyd
 .Python
-env/
+
+# Virtual Environments
 venv/
 .venv/
+env/
 ENV/
 env.bak/
 venv.bak/
-pip-log.txt
-pip-delete-this-directory.txt
-.mypy_cache/
-.dmypy.json
-dmypy.json
-.pytest_cache/
+
+# Python Packaging
 *.egg-info/
 dist/
 build/
@@ -59,51 +56,44 @@ build/
 .eggs/
 site-packages/
 
-# ── ML Model Files (large binary — use Git LFS if needed) ────────────────────
-ml/models/*.pkl
-ml/models/*.joblib
-ml/models/*.h5
-ml/models/*.pt
-ml/models/*.pth
+# Testing / Cache
+.mypy_cache/
+.pytest_cache/
 
-# ── ML Generated Output ───────────────────────────────────────────────────────
-ml/models/feature_importance.png
-ml/models/actual_vs_predicted.png
+# ── ML Models & Data (IMPORTANT) ─────────────────────────
+ml/models/
+ml/data/
+ml/kaggle_raw/
+ml/species_data/
 
-# ── Dataset (can be large) ────────────────────────────────────────────────────
-ml/data/*.csv
-ml/data/*.xlsx
-ml/data/*.json
-
-# ── Jupyter Notebooks Checkpoints ─────────────────────────────────────────────
+# ── Jupyter Notebooks ───────────────────────────────────
 .ipynb_checkpoints/
 *.ipynb
 
-# ── Logs ──────────────────────────────────────────────────────────────────────
+# ── Logs ────────────────────────────────────────────────
 logs/
 *.log
 *.log.*
 
-# ── MongoDB Local Data ────────────────────────────────────────────────────────
+# ── MongoDB Local Data ──────────────────────────────────
 data/db/
 *.db
 
-# ── VS Code ───────────────────────────────────────────────────────────────────
+# ── IDE / Editor ────────────────────────────────────────
 .vscode/
 !.vscode/extensions.json
 !.vscode/settings.json
 
-# ── JetBrains IDEs ────────────────────────────────────────────────────────────
 .idea/
 *.iml
 *.iws
 
-# ── Coverage Reports ──────────────────────────────────────────────────────────
+# ── Coverage ────────────────────────────────────────────
 coverage/
 *.lcov
 .nyc_output/
 
-# ── Misc ──────────────────────────────────────────────────────────────────────
+# ── Misc ────────────────────────────────────────────────
 *.swp
 *.swo
 *~
