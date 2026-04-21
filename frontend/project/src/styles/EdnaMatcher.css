@@ -1,0 +1,116 @@
+/* ══════════════════════════════════════════════════════
+   EdnaMatcher.css
+   Save as: client/src/styles/EdnaMatcher.css
+   ══════════════════════════════════════════════════════ */
+
+.edna-page { padding: 1.5rem; max-width: 1400px; margin: auto; }
+.edna-header { text-align: center; margin-bottom: 2rem; }
+.edna-header h1 { font-size: 2rem; color: #1e90ff; }
+.edna-header p  { color: #90caf9; margin-top: .4rem; }
+
+.edna-card {
+  background: #1a2d44; border-radius: 14px;
+  padding: 1.4rem; margin-bottom: 1.2rem;
+  box-shadow: 0 4px 20px rgba(0,0,0,.4);
+}
+.edna-card h3 { color: #1e90ff; margin-bottom: 1rem; font-size: 1rem; }
+
+.edna-grid { display: grid; grid-template-columns: 420px 1fr; gap: 1.5rem; }
+@media (max-width: 900px) { .edna-grid { grid-template-columns: 1fr; } }
+
+/* Textarea */
+.seq-label-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: .6rem; }
+.seq-label-row h3 { margin: 0; }
+.btn-sample { background: #0d3358; border: 1px solid #1e90ff; color: #90caf9;
+  padding: .3rem .7rem; border-radius: 8px; font-size: .8rem; cursor: pointer; }
+.btn-sample:hover { background: #1e90ff; color: #fff; }
+
+.seq-input {
+  width: 100%; padding: .8rem; background: #0d1b2a; border: 1px solid #1e3a5a;
+  color: #e0e6ed; border-radius: 10px; font-family: "Courier New", monospace;
+  font-size: .82rem; resize: vertical; outline: none; line-height: 1.6;
+}
+.seq-input:focus  { border-color: #1e90ff; }
+.seq-input.valid  { border-color: #2e7d32; }
+.seq-input.invalid{ border-color: #c62828; }
+.seq-error { color: #ff8a80; font-size: .8rem; margin-top: .3rem; }
+
+.seq-stats { display: flex; gap: 1rem; flex-wrap: wrap; margin-top: .5rem;
+  font-size: .8rem; color: #90caf9; }
+.seq-stats b  { color: #fff; }
+.seq-stats .good { color: #2e7d32; }
+.seq-stats .warn { color: #f57f17; }
+
+.btn-match {
+  width: 100%; margin-top: .8rem; padding: .9rem;
+  background: linear-gradient(135deg, #1e90ff, #0d47a1);
+  border: none; border-radius: 10px; color: #fff;
+  font-size: 1rem; font-weight: 700; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; gap: .5rem;
+}
+.btn-match:disabled { opacity: .5; cursor: not-allowed; }
+.status-msg { color: #90caf9; font-size: .83rem; margin-top: .4rem; text-align: center; }
+.edna-error { background: #4a1010; border: 1px solid #c62828; border-radius: 8px;
+  padding: .6rem .9rem; color: #ff8a80; margin-top: .6rem; font-size: .85rem; }
+
+.edna-placeholder {
+  background: #1a2d44; border-radius: 14px; min-height: 200px;
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: center; gap: .5rem; color: #607d8b; text-align: center; padding: 2rem;
+}
+.edna-placeholder span { font-size: 3.5rem; }
+.big-spin { width: 44px; height: 44px; border-radius: 50%;
+  border: 3px solid rgba(255,255,255,.15); border-top-color: #1e90ff;
+  animation: spin .7s linear infinite; margin: 0 auto 1rem; }
+
+/* Result */
+.result-main { border-top: 3px solid #1e90ff; }
+.res-top { display: flex; justify-content: space-between; align-items: flex-start;
+  gap: 1rem; margin-bottom: 1rem; }
+.res-top h2  { font-size: 1.5rem; color: #fff; margin-bottom: .2rem; }
+.sci-name    { color: #90caf9; font-size: .95rem; }
+
+.method-badge { padding: .3rem .8rem; border-radius: 20px; font-size: .78rem;
+  font-weight: 700; white-space: nowrap; }
+.method-badge.ncbi  { background: #0d3358; color: #90caf9; border: 1px solid #1e90ff; }
+.method-badge.local { background: #1a2d44; color: #90caf9; border: 1px solid #607d8b; }
+.method-badge.sm { font-size: .72rem; padding: .15rem .5rem; }
+
+.match-label { display: flex; justify-content: space-between; font-size: .85rem;
+  color: #90caf9; margin-bottom: .4rem; }
+.match-label strong { color: #fff; font-size: 1rem; }
+.match-bg   { background: #0d1b2a; border-radius: 8px; height: 10px; overflow: hidden; margin-bottom: .8rem; }
+.match-fill { height: 100%; border-radius: 8px; transition: width .7s; }
+
+.evalue { font-size: .82rem; color: #90caf9; margin-bottom: .6rem; }
+.evalue b { color: #fff; }
+.tooltip { cursor: help; margin-left: .3rem; }
+.cons-row { margin: .6rem 0; }
+.cons-badge { display: inline-block; padding: .3rem .8rem; border-radius: 20px;
+  color: #fff; font-size: .78rem; font-weight: 700; }
+.cons-badge.sm { font-size: .72rem; padding: .15rem .5rem; }
+.species-desc { color: #b0bec5; font-size: .87rem; line-height: 1.6;
+  padding: .7rem .9rem; background: #0d1b2a; border-radius: 8px; margin-top: .6rem; }
+
+/* Seq stats grid */
+.seq-stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: .8rem; }
+.sstat { background: #0d1b2a; border-radius: 10px; padding: .6rem .9rem;
+  display: flex; flex-direction: column; gap: .2rem; }
+.sstat span { font-size: .75rem; color: #90caf9; }
+.sstat strong { font-size: .95rem; color: #fff; }
+
+/* Match chip */
+.match-chip { display: inline-block; padding: .2rem .55rem; border-radius: 10px;
+  color: #fff; font-size: .78rem; font-weight: 700; }
+
+/* History */
+.edna-hist-section { margin-top: 1rem; }
+.filter-input { background: #0d1b2a; border: 1px solid #1e3a5a; color: #e0e6ed;
+  padding: .35rem .7rem; border-radius: 8px; font-size: .82rem; outline: none; }
+.filter-input:focus { border-color: #1e90ff; }
+.edna-table-wrap { overflow-x: auto; }
+.edna-table { width: 100%; border-collapse: collapse; font-size: .82rem; }
+.edna-table th { background: #0d3358; color: #90caf9; padding: .6rem .8rem;
+  text-align: left; white-space: nowrap; }
+.edna-table td { padding: .55rem .8rem; border-bottom: 1px solid #1e3a5a; white-space: nowrap; }
+.edna-table tr:hover td { background: #162940; }

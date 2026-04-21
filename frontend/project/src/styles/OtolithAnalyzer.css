@@ -1,0 +1,126 @@
+/* ══════════════════════════════════════════════════════
+   OtolithAnalyzer.css
+   Save as: client/src/styles/OtolithAnalyzer.css
+   ══════════════════════════════════════════════════════ */
+
+.oto-page { padding: 1.5rem; max-width: 1400px; margin: auto; }
+.oto-header { text-align: center; margin-bottom: 2rem; }
+.oto-header h1 { font-size: 2rem; color: #1e90ff; }
+.oto-header p  { color: #90caf9; margin-top: .4rem; }
+
+.oto-card {
+  background: #1a2d44; border-radius: 14px;
+  padding: 1.4rem; margin-bottom: 1.2rem;
+  box-shadow: 0 4px 20px rgba(0,0,0,.4);
+}
+.oto-card h3 { color: #1e90ff; margin-bottom: 1rem; font-size: 1rem; }
+
+.oto-grid { display: grid; grid-template-columns: 380px 1fr; gap: 1.5rem; }
+@media (max-width: 900px) { .oto-grid { grid-template-columns: 1fr; } }
+
+/* Drop zone */
+.oto-drop {
+  border: 2px dashed #1e3a5a; border-radius: 12px;
+  min-height: 200px; display: flex; align-items: center;
+  justify-content: center; cursor: pointer; transition: all .2s;
+  background: #0d1b2a; overflow: hidden;
+}
+.oto-drop:hover, .oto-drop.drag-over { border-color: #1e90ff; background: #0d3358; }
+.oto-drop.has-preview { cursor: default; border-style: solid; border-color: #1e90ff; }
+.oto-drop-hint { text-align: center; padding: 1.5rem; }
+.oto-drop-hint span { font-size: 3rem; }
+.oto-drop-hint p { color: #90caf9; margin: .3rem 0; }
+.oto-drop-hint .sub  { font-size: .82rem; color: #607d8b; }
+.oto-drop-hint .fmt  { font-size: .72rem; color: #455a64; }
+
+.oto-preview-wrap { position: relative; width: 100%; }
+.oto-preview-img  { width: 100%; max-height: 260px; object-fit: cover; border-radius: 10px; display: block; }
+.btn-remove {
+  position: absolute; top: 8px; right: 8px;
+  background: rgba(0,0,0,.6); border: none; color: #fff;
+  padding: .25rem .6rem; border-radius: 6px; cursor: pointer; font-size: .8rem;
+}
+.btn-remove:hover { background: #c62828; }
+
+.btn-browse {
+  width: 100%; margin-top: .7rem; padding: .65rem;
+  background: #0d3358; border: 1px solid #1e90ff;
+  color: #90caf9; border-radius: 10px; cursor: pointer; font-size: .88rem;
+}
+.btn-analyze {
+  width: 100%; margin-top: .7rem; padding: .9rem;
+  background: linear-gradient(135deg, #1e90ff, #0d47a1);
+  border: none; border-radius: 10px; color: #fff;
+  font-size: 1rem; font-weight: 700; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; gap: .5rem;
+}
+.btn-analyze:disabled { opacity: .5; cursor: not-allowed; }
+.oto-error {
+  background: #4a1010; border: 1px solid #c62828;
+  border-radius: 8px; padding: .6rem .9rem; color: #ff8a80;
+  margin-top: .6rem; font-size: .85rem;
+}
+
+/* Spinners */
+.spinner { width: 16px; height: 16px; border-radius: 50%;
+  border: 2px solid rgba(255,255,255,.3); border-top-color: #fff;
+  animation: spin .7s linear infinite; }
+.big-spinner { width: 44px; height: 44px; border-radius: 50%;
+  border: 3px solid rgba(255,255,255,.15); border-top-color: #1e90ff;
+  animation: spin .7s linear infinite; margin: 0 auto 1rem; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.oto-placeholder {
+  background: #1a2d44; border-radius: 14px; min-height: 200px;
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: center; gap: .5rem; color: #607d8b; text-align: center; padding: 2rem;
+}
+.oto-placeholder span { font-size: 3.5rem; }
+
+/* Image compare */
+.img-compare { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.img-compare img { width: 100%; border-radius: 10px; border: 1px solid #1e3a5a; }
+.img-label { color: #90caf9; font-size: .8rem; margin-bottom: .3rem; }
+
+/* Stats */
+.result-stats { display: grid; grid-template-columns: 1fr 1fr; gap: .8rem; margin-bottom: 1rem; }
+.stat-box {
+  background: #0d1b2a; border-radius: 10px; padding: .7rem 1rem;
+  display: flex; flex-direction: column; gap: .2rem; align-items: center; text-align: center;
+}
+.stat-icon  { font-size: 1.5rem; }
+.stat-label { font-size: .75rem; color: #90caf9; }
+.stat-box strong { font-size: 1rem; color: #fff; }
+
+.conf-row { display: flex; justify-content: space-between; font-size: .85rem;
+  color: #90caf9; margin-bottom: .4rem; }
+.conf-bg  { background: #0d1b2a; border-radius: 8px; height: 10px; overflow: hidden; margin-bottom: .8rem; }
+.conf-fill { height: 100%; border-radius: 8px; transition: width .7s; }
+.growth-desc, .stock-desc { color: #b0bec5; font-size: .83rem; margin-top: .4rem;
+  padding: .5rem .8rem; background: #0d1b2a; border-radius: 8px; }
+
+/* Charts */
+.oto-charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; margin-bottom: 1.5rem; }
+@media (max-width: 800px) { .oto-charts-grid { grid-template-columns: 1fr; } }
+
+/* History */
+.oto-hist-section { margin-top: 1rem; }
+.btn-toggle { width: 100%; padding: .75rem; background: #1a2d44; border: 1px solid #1e3a5a;
+  color: #90caf9; border-radius: 10px; cursor: pointer; font-size: .9rem; }
+.btn-toggle:hover { border-color: #1e90ff; color: #1e90ff; }
+.hist-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+.hist-head h3 { color: #1e90ff; margin: 0; }
+.btn-export { background: #0d3358; border: 1px solid #1e90ff; color: #90caf9;
+  padding: .35rem .8rem; border-radius: 8px; font-size: .82rem; cursor: pointer; }
+.btn-export:hover { background: #1e90ff; color: #fff; }
+.empty-msg { text-align: center; color: #607d8b; padding: 2rem; }
+.oto-table-wrap { overflow-x: auto; }
+.oto-table { width: 100%; border-collapse: collapse; font-size: .82rem; }
+.oto-table th { background: #0d3358; color: #90caf9; padding: .6rem .8rem; text-align: left; white-space: nowrap; }
+.oto-table td { padding: .55rem .8rem; border-bottom: 1px solid #1e3a5a; white-space: nowrap; }
+.oto-table tr:hover td { background: #162940; }
+.badge { display: inline-block; padding: .2rem .55rem; border-radius: 10px; color: #fff; font-size: .75rem; font-weight: 700; }
+.btn-del { background: #c62828; border: none; color: #fff; border-radius: 6px;
+  padding: .22rem .5rem; cursor: pointer; font-size: .8rem; }
+.btn-del:hover { background: #e53935; }
+

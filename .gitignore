@@ -65,6 +65,7 @@ ml/models/
 ml/data/
 ml/kaggle_raw/
 ml/species_data/
+ml/otolith_data/
 
 # ── Jupyter Notebooks ───────────────────────────────────
 .ipynb_checkpoints/

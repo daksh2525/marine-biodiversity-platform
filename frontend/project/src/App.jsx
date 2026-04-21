@@ -1,11 +1,12 @@
-
 // ── src/App.jsx ───────────────────────────────────────────────────────────────
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import Navbar   from "./components/Navbar";
-import Home     from "./pages/Home";
-import History  from "./pages/History";
+import Navbar from "./components/Navbar";
+import Home from "./pages/Home";
+import History from "./pages/History";
 import SpeciesIdentifier from "./pages/SpeciesIdentifier";
-import EcosystemHealth  from "./pages/EcosystemHealth";
+import EcosystemHealth from "./pages/EcosystemHealth";
+import OtolithAnalyzer from "./pages/OtolithAnalyzer";
+import EdnaMatcher from "./pages/EdnaMatcher";
 import "./App.css";
 export default function App() {
   return (
@@ -13,9 +14,11 @@ export default function App() {
       <Navbar />
       <div className="container">
         <Routes>
-          <Route path="/"        element={<Home />}    />
+          <Route path="/" element={<Home />} />
           <Route path="/species" element={<SpeciesIdentifier />} />
-           <Route path="/ecosystem" element={<EcosystemHealth />}   />
+          <Route path="/ecosystem" element={<EcosystemHealth />} />
+          <Route path="/otolith" element={<OtolithAnalyzer />} />
+          <Route path="/edna" element={<EdnaMatcher />} />
           <Route path="/history" element={<History />} />
         </Routes>
       </div>
