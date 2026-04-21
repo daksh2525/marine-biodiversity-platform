@@ -1,0 +1,43 @@
+
+/* ── About.css — create as client/src/styles/About.css ──────────────────── */
+.about-page { max-width: 1000px; margin: auto; padding: 2rem 1.5rem; }
+
+.about-hero {
+  text-align: center; margin-bottom: 3rem; padding: 2.5rem;
+  background: linear-gradient(135deg, #1a2d44, #0d3358);
+  border-radius: 16px; border: 1px solid #1e3a5a;
+}
+.about-hero h1 { font-size: 2rem; color: #1e90ff; margin-bottom: .6rem; }
+.about-hero p  { color: #90caf9; margin: .3rem 0; }
+.about-org     { font-size: .82rem; color: #607d8b; margin-top: .6rem !important; }
+
+.about-section { margin-bottom: 2.5rem; }
+.about-section h2 { color: #1e90ff; margin-bottom: 1rem; font-size: 1.2rem;
+  border-bottom: 1px solid #1e3a5a; padding-bottom: .5rem; }
+.about-section > p { color: #b0bec5; line-height: 1.8; font-size: .92rem; }
+
+.feature-cards {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1rem;
+}
+.feature-card {
+  background: #1a2d44; border-radius: 12px; padding: 1.2rem;
+  border: 1px solid #1e3a5a; transition: border-color .2s;
+}
+.feature-card:hover { border-color: #1e90ff; }
+.feature-icon  { font-size: 2rem; display: block; margin-bottom: .5rem; }
+.feature-card h3 { color: #e0e6ed; font-size: .95rem; margin-bottom: .4rem; }
+.feature-card p  { color: #90caf9; font-size: .82rem; line-height: 1.6; }
+
+.tech-tags { display: flex; flex-wrap: wrap; gap: .5rem; }
+.tech-tag  {
+  background: #0d3358; border: 1px solid #1e90ff; color: #90caf9;
+  padding: .3rem .8rem; border-radius: 20px; font-size: .8rem;
+}
+
+.about-footer-links { display: flex; gap: 1.5rem; justify-content: center; }
+.about-footer-links a {
+  color: #1e90ff; text-decoration: none; font-weight: 600;
+  padding: .5rem 1.2rem; border: 1px solid #1e90ff;
+  border-radius: 8px; transition: all .2s;
+}
+.about-footer-links a:hover { background: #1e90ff; color: #fff; }
