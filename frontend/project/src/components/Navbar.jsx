@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
 import { useAuth } from "../context/AuthContext";
 import "../styles/Navbar.css";
 
@@ -10,12 +11,11 @@ const ROLE_BADGE = {
   phd:         { label: "PhD",         color: "#9c27b0" },
 };
 
-// Role-based nav items
 const NAV_ITEMS = {
   fisherman:   [
-    { to: "/predict", label: "📊 Predict" },
-    { to: "/species", label: "🐠 Species" },
-    { to: "/history", label: "🕓 History" },
+    { to: "/predict",   label: "📊 Predict" },
+    { to: "/species",   label: "🐠 Species" },
+    { to: "/history",   label: "🕓 History" },
   ],
   scientist:   [
     { to: "/predict",   label: "📊 Predict" },
@@ -40,10 +40,10 @@ const NAV_ITEMS = {
 };
 
 export default function Navbar() {
-  const { pathname }          = useLocation();
-  const { user, isLoggedIn, logout } = useAuth();
-  const navigate              = useNavigate();
-  const [menuOpen, setMenuOpen] = useState(false);
+  const { pathname }                     = useLocation();
+  const { user, isLoggedIn, logout }     = useAuth();
+  const navigate                         = useNavigate();
+  const [menuOpen, setMenuOpen]          = useState(false);
 
   const navItems = isLoggedIn ? (NAV_ITEMS[user?.role] || []) : [];
   const badge    = ROLE_BADGE[user?.role];
@@ -51,6 +51,7 @@ export default function Navbar() {
   const handleLogout = () => {
     logout();
     setMenuOpen(false);
+    toast.success("Logged out successfully.");
     navigate("/login", { replace: true });
   };
 
@@ -95,9 +96,9 @@ export default function Navbar() {
           <Link to="/login" className="btn-login">Sign In</Link>
         )}
 
-        {/* Hamburger */}
         {isLoggedIn && (
-          <button className={`hamburger ${menuOpen ? "open" : ""}`}
+          <button
+            className={`hamburger ${menuOpen ? "open" : ""}`}
             onClick={() => setMenuOpen(v => !v)}
             aria-label="Toggle menu">
             <span /><span /><span />
@@ -115,7 +116,7 @@ export default function Navbar() {
               {item.label}
             </Link>
           ))}
-          <button className="btn-logout mobile-logout" onClick={handleLogout}>
+          <button className="mobile-logout" onClick={handleLogout}>
             🚪 Logout
           </button>
         </div>

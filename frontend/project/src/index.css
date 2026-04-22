@@ -1,0 +1,118 @@
+/* ── Reset ───────────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  background: #0d1b2a;
+  color: #e0e6ed;
+  font-family: "Inter", "Segoe UI", system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+}
+
+/* ── Animations ──────────────────────────────────────────────────────────── */
+@keyframes spin    { to { transform: rotate(360deg); } }
+@keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+@keyframes fadeIn  { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:none} }
+@keyframes countUp { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:none} }
+@keyframes pulse-ring {
+  0%  { transform: scale(1);   opacity: 1;   }
+  50% { transform: scale(1.6); opacity: 0.4; }
+  100%{ transform: scale(1);   opacity: 1;   }
+}
+
+/* ── Page enter ──────────────────────────────────────────────────────────── */
+.page-enter        { opacity: 0; transform: translateY(8px); }
+.page-enter-active { opacity: 1; transform: translateY(0);
+  transition: opacity .3s ease, transform .3s ease; }
+
+/* ── Skeleton loader ─────────────────────────────────────────────────────── */
+.skeleton {
+  background: linear-gradient(90deg, #1a2d44 25%, #1e3a5a 50%, #1a2d44 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 8px;
+}
+
+/* ── Spinner ─────────────────────────────────────────────────────────────── */
+.spinner {
+  width: 16px; height: 16px;
+  border: 2px solid rgba(255,255,255,.3);
+  border-top-color: #fff; border-radius: 50%;
+  animation: spin .7s linear infinite;
+  display: inline-block;
+}
+
+/* ── Count animation ─────────────────────────────────────────────────────── */
+.count-animate { animation: countUp .5s ease forwards; }
+
+/* ── Result border colours ───────────────────────────────────────────────── */
+.result-high   { border-left: 4px solid #2e7d32 !important; }
+.result-medium { border-left: 4px solid #f57f17 !important; }
+.result-low    { border-left: 4px solid #c62828 !important; }
+
+/* ── Tooltip ─────────────────────────────────────────────────────────────── */
+.tooltip-wrap {
+  position: relative; display: inline-flex; align-items: center;
+}
+.tooltip-wrap .tooltip-text {
+  visibility: hidden; background: #0d3358; color: #90caf9;
+  font-size: 12px; border-radius: 8px; padding: 6px 10px;
+  position: absolute; bottom: 130%; left: 50%;
+  transform: translateX(-50%); white-space: nowrap;
+  border: 1px solid #1e3a5a; z-index: 999;
+  opacity: 0; transition: opacity .2s; pointer-events: none;
+  max-width: 220px; white-space: normal; text-align: center;
+}
+.tooltip-wrap:hover .tooltip-text { visibility: visible; opacity: 1; }
+
+/* ── Mobile global ───────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  h1 { font-size: 22px !important; }
+  h2 { font-size: 18px !important; }
+  input[type="range"] { height: 24px; }
+
+  /* Leaflet map */
+  .leaflet-container { height: 280px !important; }
+
+  /* Stat cards 2-column */
+  .stats-bar { grid-template-columns: 1fr 1fr !important; }
+
+  /* Tables scrollable */
+  .table-scroll, .eco-table-scroll,
+  .oto-table-wrap, .edna-table-wrap { overflow-x: auto; }
+
+  /* Otolith image compare stacks */
+  .img-compare { flex-direction: column !important;
+                 grid-template-columns: 1fr !important; }
+
+  /* Auth card */
+  .auth-card { margin: 1rem; padding: 1.5rem 1rem; border-radius: 16px; }
+
+  /* DNA textarea */
+  .seq-input { height: 140px !important; font-size: 12px !important; }
+}
+
+@media (min-width: 769px) {
+  .leaflet-container { height: 460px !important; }
+}
+
+@media (max-width: 480px) {
+  h1 { font-size: 19px !important; }
+  .container { padding: 12px !important; }
+  .auth-row { grid-template-columns: 1fr !important; }
+}
+
+/* ── History tabs scrollable ─────────────────────────────────────────────── */
+.history-tabs {
+  display: flex; gap: 8px; overflow-x: auto;
+  padding-bottom: 4px; scrollbar-width: none;
+}
+.history-tabs::-webkit-scrollbar { display: none; }
+
+/* ── Navbar hamburger mobile ─────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .navbar-links { display: none !important; }
+  .hamburger    { display: flex !important; }
+  .mobile-menu  { display: flex !important; }
+  .user-name    { display: none; }
+}

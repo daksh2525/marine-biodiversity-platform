@@ -1,32 +1,31 @@
-// ── Login.jsx ─────────────────────────────────────────────────────────────────
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
 import { useAuth } from "../context/AuthContext";
+import { Spinner } from "../components/UI";
 import "../styles/Auth.css";
 
 const ROLE_REDIRECT = {
-  fisherman:   "/predict",
-  scientist:   "/predict",
-  phd:         "/predict",
-  policymaker: "/ecosystem",
+  fisherman: "/predict", scientist: "/predict",
+  phd: "/predict",       policymaker: "/ecosystem",
 };
 
 export default function Login() {
   const [email,    setEmail]    = useState("");
   const [password, setPassword] = useState("");
-  const [error,    setError]    = useState("");
   const [loading,  setLoading]  = useState(false);
   const { login } = useAuth();
   const navigate  = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError(""); setLoading(true);
+    setLoading(true);
     try {
       const user = await login(email, password);
+      toast.success(`Welcome back, ${user.name.split(" ")[0]}!`);
       navigate(ROLE_REDIRECT[user.role] || "/predict", { replace: true });
     } catch (err) {
-      setError(err.response?.data?.error || "Login failed. Check your credentials.");
+      toast.error(err.response?.data?.error || "Invalid email or password.");
     } finally {
       setLoading(false);
     }
@@ -42,19 +41,25 @@ export default function Login() {
         <form onSubmit={handleSubmit} className="auth-form">
           <div className="auth-field">
             <label>Email</label>
-            <input type="email" value={email} onChange={e => setEmail(e.target.value)}
+            <input type="email" value={email}
+              onChange={e => setEmail(e.target.value)}
               placeholder="your@email.com" required autoFocus />
           </div>
           <div className="auth-field">
             <label>Password</label>
-            <input type="password" value={password} onChange={e => setPassword(e.target.value)}
+            <input type="password" value={password}
+              onChange={e => setPassword(e.target.value)}
               placeholder="••••••••" required />
           </div>
 
-          {error && <div className="auth-error">⚠️ {error}</div>}
-
-          <button type="submit" className="auth-btn" disabled={loading}>
-            {loading ? <><span className="auth-spinner-sm" /> Signing in…</> : "Sign In"}
+          <button type="submit" className="auth-btn" disabled={loading}
+            style={{ opacity: loading ? 0.75 : 1 }}>
+            {loading
+              ? <span style={{ display:"flex", alignItems:"center",
+                  gap:8, justifyContent:"center" }}>
+                  <Spinner /> Signing in…
+                </span>
+              : "Sign In"}
           </button>
         </form>
 
@@ -65,4 +70,3 @@ export default function Login() {
     </div>
   );
 }
-
