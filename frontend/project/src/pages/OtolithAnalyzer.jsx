@@ -17,29 +17,113 @@ const STOCK_INFO = {
 };
 const GROWTH_COLOR = { Fast: "#2e7d32", Normal: "#1e90ff", Slow: "#f57f17", Unknown: "#607d8b" };
 
-export default function OtolithAnalyzer() {
-  const [file,       setFile]       = useState(null);
-  const [preview,    setPreview]    = useState(null);
-  const [result,     setResult]     = useState(null);
-  const [loading,    setLoading]    = useState(false);
-  const [error,      setError]      = useState("");
-  const [dragOver,   setDragOver]   = useState(false);
-  const [history,    setHistory]    = useState([]);
-  const [showHist,   setShowHist]   = useState(false);
-  const [deleting,   setDeleting]   = useState(null);
-  const inputRef = useRef();
-  const ageChartRef  = useRef(); const ageChart  = useRef();
-  const growChartRef = useRef(); const growChart = useRef();
+// ── Frontend image validation ─────────────────────────────────────────────────
+async function validateOtolithImage(file) {
+  // 1. Extension — JPG/PNG only
+  const ext = file.name.split(".").pop().toLowerCase();
+  if (!["jpg", "jpeg", "png"].includes(ext))
+    return {
+      valid: false,
+      error: "Only JPG and PNG images are supported.",
+      tip:   "Convert your microscope image to JPG or PNG format.",
+    };
 
-  // ── File handling ──────────────────────────────────────────────────────────
-  const handleFile = useCallback((f) => {
+  // 2. Size — 10 MB max
+  if (file.size > 10 * 1024 * 1024)
+    return {
+      valid: false,
+      error: "File too large. Maximum size is 10 MB.",
+      tip:   "Resize or compress the image before uploading.",
+    };
+
+  // 3. Dimension checks
+  return new Promise(resolve => {
+    const img = new Image();
+    img.onload = () => {
+      URL.revokeObjectURL(img.src);
+      const { width: w, height: h } = img;
+      const ratio = w / h;
+
+      // Screenshots are usually very wide (16:9) or very large
+      if (ratio > 2.5 || ratio < 0.4)
+        return resolve({
+          valid: false,
+          error: "This looks like a screenshot — wrong aspect ratio for an otolith.",
+          tip:   "Otolith microscope images are roughly square. "
+               + "Screenshots and documents are rejected.",
+        });
+
+      // Typical screen resolutions — strong indicator of screenshot
+      const screenRes = [
+        [1920,1080],[1366,768],[1280,720],[1440,900],
+        [2560,1440],[3840,2160],[1280,800],[1024,768],
+      ];
+      const isScreen = screenRes.some(([sw, sh]) =>
+        Math.abs(w - sw) < 10 && Math.abs(h - sh) < 10
+      );
+      if (isScreen)
+        return resolve({
+          valid: false,
+          error: "This appears to be a screenshot.",
+          tip:   "Upload a microscope photograph of the otolith, not a screenshot.",
+        });
+
+      if (w > 4000 || h > 4000)
+        return resolve({
+          valid: false,
+          error: "Image resolution too high (max 4000×4000 px).",
+          tip:   "Resize the image before uploading.",
+        });
+
+      resolve({ valid: true });
+    };
+    img.onerror = () => resolve({ valid: false, error: "Could not read image file.", tip: "" });
+    img.src = URL.createObjectURL(file);
+  });
+}
+
+// ── Validation error component ────────────────────────────────────────────────
+function ValidationError({ error, tip, onRetry }) {
+  return (
+    <div className="val-error-box">
+      <div className="val-error-title">⚠️ {error}</div>
+      {tip && <p className="val-error-tip">💡 {tip}</p>}
+      <button className="val-retry-btn" onClick={onRetry}>
+        📁 Upload Different Image
+      </button>
+    </div>
+  );
+}
+
+export default function OtolithAnalyzer() {
+  const [file,     setFile]     = useState(null);
+  const [preview,  setPreview]  = useState(null);
+  const [result,   setResult]   = useState(null);
+  const [loading,  setLoading]  = useState(false);
+  const [error,    setError]    = useState("");
+  const [errorTip, setErrorTip] = useState("");   // ← new
+  const [dragOver, setDragOver] = useState(false);
+  const [history,  setHistory]  = useState([]);
+  const [showHist, setShowHist] = useState(false);
+  const [deleting, setDeleting] = useState(null);
+
+  const inputRef    = useRef();
+  const ageChartRef = useRef(); const ageChart  = useRef();
+  const growChartRef= useRef(); const growChart = useRef();
+
+  // ── File handling (now async + validated) ─────────────────────────────────
+  const handleFile = useCallback(async (f) => {
     if (!f) return;
-    if (!["image/jpeg","image/png","image/bmp","image/tiff"].includes(f.type)) {
-      setError("Only JPG, PNG, BMP or TIFF images supported."); return;
+    setError(""); setErrorTip(""); setResult(null);
+
+    const check = await validateOtolithImage(f);
+    if (!check.valid) {
+      setError(check.error);
+      setErrorTip(check.tip || "");
+      return;
     }
-    if (f.size > 15 * 1024 * 1024) { setError("Image must be < 15 MB"); return; }
-    setFile(f); setPreview(URL.createObjectURL(f));
-    setResult(null); setError("");
+    setFile(f);
+    setPreview(URL.createObjectURL(f));
   }, []);
 
   const onDrop = (e) => {
@@ -47,10 +131,16 @@ export default function OtolithAnalyzer() {
     handleFile(e.dataTransfer.files[0]);
   };
 
+  const clearImage = () => {
+    setFile(null); setPreview(null); setResult(null);
+    setError(""); setErrorTip("");
+    if (inputRef.current) inputRef.current.value = "";
+  };
+
   // ── Analyze ────────────────────────────────────────────────────────────────
   const handleAnalyze = async () => {
     if (!file) { setError("Please upload an otolith image first."); return; }
-    setLoading(true); setError(""); setResult(null);
+    setLoading(true); setError(""); setErrorTip(""); setResult(null);
     try {
       const form = new FormData();
       form.append("image", file);
@@ -58,7 +148,9 @@ export default function OtolithAnalyzer() {
         { headers: { "Content-Type": "multipart/form-data" } });
       setResult(res.data);
     } catch (e) {
-      setError(e.response?.data?.error || "Analysis failed. Is Flask running?");
+      const apiErr = e.response?.data;
+      setError(apiErr?.error || apiErr?.message || "Analysis failed. Is Flask running?");
+      setErrorTip(apiErr?.tip || "Upload a grayscale microscope photograph of a fish otolith.");
     } finally {
       setLoading(false);
     }
@@ -66,12 +158,11 @@ export default function OtolithAnalyzer() {
 
   // ── Charts ─────────────────────────────────────────────────────────────────
   const renderCharts = (hist) => {
-    // Age distribution
     ageChart.current?.destroy();
     if (ageChartRef.current && hist.length) {
       const ageBuckets = {};
       hist.forEach(r => { ageBuckets[r.age_years] = (ageBuckets[r.age_years] || 0) + 1; });
-      const labels = Object.keys(ageBuckets).sort((a,b) => a - b);
+      const labels = Object.keys(ageBuckets).sort((a, b) => a - b);
       ageChart.current = new Chart(ageChartRef.current, {
         type: "bar",
         data: {
@@ -89,14 +180,13 @@ export default function OtolithAnalyzer() {
       });
     }
 
-    // Growth rate trend
     growChart.current?.destroy();
     if (growChartRef.current && hist.length) {
-      const sorted = [...hist].sort((a,b) => new Date(a.createdAt) - new Date(b.createdAt));
+      const sorted = [...hist].sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
       growChart.current = new Chart(growChartRef.current, {
         type: "line",
         data: {
-          labels: sorted.map((r, i) => `#${i + 1}`),
+          labels: sorted.map((_, i) => `#${i + 1}`),
           datasets: [
             { label: "Age (years)", data: sorted.map(r => r.age_years),
               borderColor: "#1e90ff", tension: 0.4, fill: false, pointRadius: 5 },
@@ -115,10 +205,9 @@ export default function OtolithAnalyzer() {
   };
 
   const loadHistory = () =>
-    axios.get(`${EXPRESS}/otolith-history`).then(r => {
-      setHistory(r.data);
-      renderCharts(r.data);
-    }).catch(() => {});
+    axios.get(`${EXPRESS}/otolith-history`)
+      .then(r => { setHistory(r.data); renderCharts(r.data); })
+      .catch(() => {});
 
   useEffect(() => { if (showHist) loadHistory(); }, [showHist]);
   useEffect(() => { if (result)   loadHistory(); }, [result]);
@@ -131,7 +220,7 @@ export default function OtolithAnalyzer() {
   };
 
   const exportCSV = () => {
-    const h = ["Date","Age(yrs)","Rings","Growth Rate","Stock","Confidence"];
+    const h    = ["Date","Age(yrs)","Rings","Growth Rate","Stock","Confidence"];
     const rows = history.map(r => [
       new Date(r.createdAt).toLocaleString(),
       r.age_years, r.ring_count, r.growth_rate, r.stock_id, r.confidence,
@@ -150,10 +239,12 @@ export default function OtolithAnalyzer() {
       </div>
 
       <div className="oto-grid">
-        {/* Upload */}
+        {/* ── Upload ── */}
         <div className="oto-card">
           <h3>Upload Otolith Image</h3>
-          <div className={`oto-drop ${dragOver ? "drag-over" : ""} ${preview ? "has-preview" : ""}`}
+          <div
+            className={`oto-drop ${dragOver ? "drag-over" : ""} ${preview ? "has-preview" : ""}`}
+            style={error && !preview ? { borderColor: "#c62828" } : {}}
             onDrop={onDrop}
             onDragOver={e => { e.preventDefault(); setDragOver(true); }}
             onDragLeave={() => setDragOver(false)}
@@ -163,7 +254,7 @@ export default function OtolithAnalyzer() {
               ? <div className="oto-preview-wrap">
                   <img src={preview} alt="Otolith" className="oto-preview-img" />
                   <button className="btn-remove"
-                    onClick={e => { e.stopPropagation(); setFile(null); setPreview(null); setResult(null); }}>
+                    onClick={e => { e.stopPropagation(); clearImage(); }}>
                     ✕ Remove
                   </button>
                 </div>
@@ -171,27 +262,39 @@ export default function OtolithAnalyzer() {
                   <span>🦴</span>
                   <p>Drag & drop otolith image here</p>
                   <p className="sub">or click to browse</p>
-                  <p className="fmt">JPG, PNG, BMP, TIFF — max 15 MB</p>
+                  <p className="fmt">JPG, PNG — max 10 MB</p>
                 </div>
             }
           </div>
+
           <input ref={inputRef} type="file"
-            accept="image/jpeg,image/png,image/bmp,image/tiff"
+            accept="image/jpeg,image/png"
             onChange={e => handleFile(e.target.files[0])}
             style={{ display: "none" }} />
+
           {!preview &&
             <button className="btn-browse" onClick={() => inputRef.current?.click()}>
               📁 Browse Image
-            </button>}
+            </button>
+          }
+
           <button className="btn-analyze" onClick={handleAnalyze} disabled={!file || loading}>
             {loading ? <><span className="spinner" /> Analysing rings…</> : "🔬 Analyze Otolith"}
           </button>
-          {error && <div className="oto-error">{error}</div>}
+
+          {/* ── Validation / API error ── */}
+          {error && (
+            <ValidationError
+              error={error}
+              tip={errorTip}
+              onRetry={clearImage}
+            />
+          )}
         </div>
 
-        {/* Result */}
+        {/* ── Result ── */}
         <div>
-          {!result && !loading && (
+          {!result && !loading && !error && (
             <div className="oto-placeholder">
               <span>🦴</span>
               <p>Upload an otolith image to see age and growth analysis</p>
@@ -226,8 +329,8 @@ export default function OtolithAnalyzer() {
                 <h3>Analysis Results</h3>
                 <div className="result-stats">
                   {[
-                    { icon: "🎂", label: "Estimated Age",   value: `${result.age_years} years` },
-                    { icon: "💫", label: "Growth Rings",    value: result.ring_count },
+                    { icon: "🎂", label: "Estimated Age",  value: `${result.age_years} years` },
+                    { icon: "💫", label: "Growth Rings",   value: result.ring_count },
                     { icon: "📈", label: "Growth Rate",
                       value: result.growth_rate,
                       color: GROWTH_COLOR[result.growth_rate] },
@@ -243,21 +346,18 @@ export default function OtolithAnalyzer() {
                   ))}
                 </div>
 
-                {/* Confidence bar */}
                 <div className="conf-row">
                   <span>AI Confidence</span>
                   <strong>{result.confidence?.toFixed(1)}%</strong>
                 </div>
                 <div className="conf-bg">
-                  <div className="conf-fill"
-                    style={{ width: `${result.confidence}%`,
-                      background: result.confidence >= 70 ? "#2e7d32" : "#f57f17" }} />
+                  <div className="conf-fill" style={{
+                    width: `${result.confidence}%`,
+                    background: result.confidence >= 70 ? "#2e7d32" : "#f57f17",
+                  }} />
                 </div>
 
-                {result.growth_desc && (
-                  <p className="growth-desc">{result.growth_desc}</p>
-                )}
-
+                {result.growth_desc && <p className="growth-desc">{result.growth_desc}</p>}
                 {STOCK_INFO[result.stock_id] && (
                   <p className="stock-desc">{STOCK_INFO[result.stock_id].desc}</p>
                 )}
@@ -300,14 +400,16 @@ export default function OtolithAnalyzer() {
                     <tbody>
                       {history.map((r, i) => (
                         <tr key={r._id}>
-                          <td>{i+1}</td>
+                          <td>{i + 1}</td>
                           <td>{new Date(r.createdAt).toLocaleString()}</td>
                           <td><strong>{r.age_years} yr</strong></td>
                           <td>{r.ring_count}</td>
-                          <td><span className="badge"
-                            style={{ background: GROWTH_COLOR[r.growth_rate] }}>
-                            {r.growth_rate}
-                          </span></td>
+                          <td>
+                            <span className="badge"
+                              style={{ background: GROWTH_COLOR[r.growth_rate] }}>
+                              {r.growth_rate}
+                            </span>
+                          </td>
                           <td>{STOCK_INFO[r.stock_id]?.label ?? r.stock_id}</td>
                           <td>{r.confidence?.toFixed(1)}%</td>
                           <td>

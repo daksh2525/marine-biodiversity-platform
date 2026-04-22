@@ -124,3 +124,17 @@
   padding: .22rem .5rem; cursor: pointer; font-size: .8rem; }
 .btn-del:hover { background: #e53935; }
 
+/* Validation error box */
+.val-error-box {
+  background: #4a1010; border: 1px solid #c62828;
+  border-radius: 10px; padding: 1rem 1.1rem;
+  margin-top: .8rem; display: flex; flex-direction: column; gap: .5rem;
+}
+.val-error-title { color: #ff8a80; font-weight: 700; font-size: .92rem; }
+.val-error-tip   { color: #ffcc80; font-size: .82rem; margin: 0; }
+.val-retry-btn {
+  align-self: flex-start; background: #c62828; border: none;
+  color: #fff; padding: .4rem .9rem; border-radius: 8px;
+  cursor: pointer; font-size: .82rem; transition: background .2s;
+}
+.val-retry-btn:hover { background: #e53935; }

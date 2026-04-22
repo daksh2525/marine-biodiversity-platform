@@ -1,9 +1,3 @@
-export const ZONE_HEALTH_COLOR = {
-  Healthy:  "#2e7d32",
-  Moderate: "#f57f17",
-  Critical: "#c62828",
-};
-
 const INDIAN_OCEAN_ZONES = {
   "Arabian Sea — Mumbai Coast": {
     temp: 28, salinity: 36, oxygen: 6.5,
@@ -71,3 +65,9 @@ const INDIAN_OCEAN_ZONES = {
 };
 
 export default INDIAN_OCEAN_ZONES;
+
+export const ZONE_HEALTH_COLOR = {
+  Healthy:  "#2e7d32",
+  Moderate: "#f57f17",
+  Critical: "#c62828",
+};
