@@ -1,66 +1,65 @@
-# 🐟 Fish Abundance Predictor
+# 🐟 Marine Intelligence Platform
 ### CMLRE — Centre for Marine Living Resources and Ecology, India
-> Predict fish abundance (kg/km²) in Indian EEZ waters using ocean parameters and machine learning.
+> An AI-powered marine research platform with 5 intelligent features for Indian EEZ waters.
 
 ---
 
-##  Screenshots
+## 📸 Features Overview
 
-| Home Page | History Page |
-|-----------|--------------|
-| Sliders + Prediction Result + Leaflet Map | Table + Charts + Export CSV |
+| # | Feature | Technology | Description |
+|---|---------|-----------|-------------|
+| 1 | 🐟 Fish Abundance Prediction | Random Forest + XGBoost | Predicts fish density (kg/km²) from ocean parameters |
+| 2 | 🐠 Fish Species Identification | MobileNetV2 CNN | Identifies fish species from uploaded photos |
+| 3 | 🌊 Ecosystem Health Score | ML + Rule-based | Assesses ocean health (0–100) with recommendations |
+| 4 | 🦴 Otolith Image Analysis | OpenCV + ResNet50 | Detects growth rings to estimate fish age & stock |
+| 5 | 🧬 eDNA Species Matching | BioPython + NCBI BLAST | Identifies species from water DNA samples |
 
 ---
 
-##  Tech Stack
+## 🧰 Tech Stack
 
 | Layer | Technology |
 |-------|-----------|
 | Frontend | React.js (Vite) + Leaflet.js + Chart.js |
-| Backend | Node.js + Express.js |
+| Backend | Node.js + Express.js + JWT Auth |
 | ML API | Python + Flask |
-| Database | MongoDB + Mongoose |
-| ML Models | Random Forest + XGBoost (Ensemble) |
+| Database | MongoDB |
+| ML Models | Random Forest, XGBoost, MobileNetV2, ResNet50 |
 
 ---
 
-##  Project Structure
+## 📁 Project Structure
 
 ```
-fish-abundance-predictor/
+marine-intelligence-platform/
 │
-├── client/                        # React Frontend (Vite)
+├── frontend/                      # React Frontend (Vite)
 │   └── src/
-│       ├── components/
-│       │   ├── Navbar.jsx
-│       │   ├── OceanMap.jsx       # Leaflet map
-│       │   ├── PredictionForm.jsx # Ocean parameter sliders
-│       │   ├── ResultCard.jsx     # Prediction result display
-│       │   ├── Charts.jsx         # Chart.js visualizations
-│       │   └── HistoryTable.jsx   # Sortable, filterable table
-│       ├── pages/
-│       │   ├── Home.jsx
-│       │   └── History.jsx
-│       └── services/
-│           └── api.js             # Axios API calls
+│       ├── components/            # Navbar, Footer, UI, Charts
+│       ├── context/               # AuthContext (JWT)
+│       ├── data/                  # oceanZones.js, speciesDatabase.js
+│       ├── pages/                 # All 5 feature pages + Auth pages
+│       ├── services/              # api.js (Axios calls)
+│       └── styles/                # CSS files
 │
-├── server/                        # Node.js + Express Backend
-│   ├── models/
-│   │   ├── Prediction.js          # MongoDB schema
-│   │   └── Location.js
-│   ├── server.js
-│   └── .env
+├── backend/                       # Node.js + Express
+│   ├── models/                    # MongoDB schemas (6 models)
+│   ├── middleware/                 # auth.js, roleCheck.js
+│   ├── routes/                    # auth.js routes
+│   ├── server.js                  # Main Express entry
+│   └── .env                       # Environment variables
 │
 ├── ml/                            # Python ML + Flask
-│   ├── data/
-│   │   └── fish_data.csv          # Training dataset
-│   ├── models/
-│   │   ├── rf_model.pkl           # Saved Random Forest
-│   │   └── xgb_model.pkl          # Saved XGBoost
-│   ├── generate_sample_data.py
-│   ├── model.py                   # Train & evaluate models
-│   ├── app.py                     # Flask API
-│   └── requirements.txt
+│   ├── data/                      # Training datasets (.csv)
+│   ├── models/                    # Saved model files (.pkl, .keras)
+│   ├── app.py                     # Flask API (all 5 ML routes)
+│   ├── model.py                   # Feature 1 training
+│   ├── species_model.py           # Feature 2 training
+│   ├── ecosystem_model.py         # Feature 3 training
+│   ├── otolith_model.py           # Feature 4 training
+│   ├── otolith_processor.py       # OpenCV ring detection
+│   ├── edna_matcher.py            # BioPython NCBI BLAST
+│   └── requirements.txt           # Python dependencies
 │
 ├── .gitignore
 └── README.md
@@ -70,12 +69,13 @@ fish-abundance-predictor/
 
 ## ⚙️ Prerequisites
 
-Make sure the following are installed on your machine:
-
-- [Node.js](https://nodejs.org/) ≥ 18
-- [Python](https://python.org/) ≥ 3.9
-- [MongoDB](https://www.mongodb.com/try/download/community) ≥ 6 (running locally)
-- npm ≥ 9
+### Common (Both OS)
+| Tool | Version | Download |
+|------|---------|----------|
+| Node.js | ≥ 18 | https://nodejs.org |
+| Python | 3.10 or 3.11 | https://python.org |
+| MongoDB | ≥ 6 | https://www.mongodb.com/try/download/community |
+| Git | Latest | https://git-scm.com |
 
 ---
 
@@ -84,283 +84,361 @@ Make sure the following are installed on your machine:
 ### Step 1 — Clone the Repository
 
 ```bash
-git clone https://github.com/your-username/fish-abundance-predictor.git
-cd fish-abundance-predictor
+git clone https://github.com/daksh2525/marine-biodiversity-platform.git
+cd marine-intelligence-platform
 ```
 
 ---
 
-### Step 2 — Python / ML Setup
+## 🍎 macOS Setup
+
+### Step 2 (macOS) — Python Environment
 
 ```bash
 cd ml
 
-# Create and activate virtual environment (recommended)
-python -m venv venv
-source venv/bin/activate        # Mac/Linux
-venv\Scripts\activate           # Windows
+# Create virtual environment
+python3 -m venv venv
 
-# Install dependencies
+# Activate virtual environment
+source venv/bin/activate
+
+# Install Python dependencies
 pip install -r requirements.txt
-
-# Generate synthetic training dataset
-python generate_sample_data.py
-
-# Train models (creates rf_model.pkl + xgb_model.pkl)
-python model.py
-
-# Start Flask API on port 5001
-python app.py
 ```
 
-> ✅ You should see: `Running on http://0.0.0.0:5001`
+**For Apple Silicon (M1/M2/M3) only:**
+```bash
+# Install TensorFlow for Apple Silicon (NOT the regular tensorflow)
+pip install tensorflow-macos==2.16.1
+pip install tensorflow-metal==1.1.0
 
----
+# Install remaining packages
+pip install flask flask-cors scikit-learn xgboost pandas numpy \
+            matplotlib Pillow seaborn biopython opencv-python scipy
+```
 
-### Step 3 — Express Backend Setup
+### Step 3 (macOS) — Start MongoDB
 
 ```bash
-cd server
+# Install Homebrew if not installed
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 
-# Install dependencies
+# Install MongoDB
+brew tap mongodb/brew
+brew install mongodb-community
+
+# Start MongoDB as a service
+brew services start mongodb-community
+
+# Verify MongoDB is running
+mongosh --eval "db.runCommand({ connectionStatus: 1 })"
+```
+
+### Step 4 (macOS) — Backend (Express)
+
+```bash
+cd backend
 npm install
 
 # Create .env file
-cp .env.example .env
-# OR manually create server/.env with:
-# PORT=5000
-# MONGO_URI=mongodb://localhost:27017/fishdb
-# FLASK_URL=http://localhost:5001
+touch .env
+```
 
-# Start MongoDB (in a separate terminal)
-mongod --dbpath /data/db         # Mac/Linux
-mongod --dbpath C:\data\db       # Windows
+Add to `.env`:
+```env
+PORT=5000
+MONGO_URI=mongodb://localhost:27017/fishdb
+FLASK_URL=http://localhost:5001
+JWT_SECRET=your_super_secret_key_change_this
+```
 
+```bash
 # Start Express server
 npm run dev
 ```
 
-> ✅ You should see: `🚀 Express running on port 5000` and `✅ MongoDB connected`
-
----
-
-### Step 4 — React Frontend Setup
+### Step 5 (macOS) — Frontend (React)
 
 ```bash
-cd client          # or cd frontend/vite-project
-
-# Install dependencies
+cd frontend
 npm install
-
-# Start development server
 npm run dev
 ```
 
-> ✅ Open browser at: `http://localhost:5173`
+### Step 6 (macOS) — Train ML Models + Start Flask
+
+```bash
+cd ml
+source venv/bin/activate
+
+# Train all models (run once)
+python3 generate_sample_data.py   # Feature 1 dataset
+python3 model.py                   # Feature 1: Random Forest + XGBoost
+python3 ecosystem_model.py         # Feature 3: Ecosystem model
+python3 otolith_model.py           # Feature 4: ResNet50 model
+
+# For Feature 2 (Species): download dataset first
+python3 download_dataset.py        # or setup_kaggle_dataset.py
+python3 species_model.py           # Train MobileNetV2
+
+# Start Flask API
+python3 app.py
+```
 
 ---
 
-## 🖥️ Running All Services
+## 🪟 Windows Setup
 
-Open **3 terminals** simultaneously:
+### Step 2 (Windows) — Python Environment
 
+Open **Command Prompt** or **PowerShell** as Administrator:
+
+```cmd
+cd ml
+
+# Create virtual environment
+python -m venv venv
+
+# Activate virtual environment
+venv\Scripts\activate
+
+# Install Python dependencies
+pip install -r requirements.txt
+```
+
+> ⚠️ **Windows Note:** Use `python` instead of `python3` and `pip` instead of `pip3`
+
+### Step 3 (Windows) — Start MongoDB
+
+**Option A — MongoDB installed as a service (recommended):**
+```cmd
+# Start MongoDB service
+net start MongoDB
+
+# If not installed as service, run manually:
+"C:\Program Files\MongoDB\Server\6.0\bin\mongod.exe" --dbpath "C:\data\db"
+```
+
+**Option B — Create data directory first:**
+```cmd
+mkdir C:\data\db
+"C:\Program Files\MongoDB\Server\6.0\bin\mongod.exe" --dbpath C:\data\db
+```
+
+**Verify MongoDB:**
+```cmd
+mongosh
+```
+
+### Step 4 (Windows) — Backend (Express)
+
+```cmd
+cd backend
+npm install
+```
+
+Create `.env` file in `backend/` folder:
+```env
+PORT=5000
+MONGO_URI=mongodb://localhost:27017/fishdb
+FLASK_URL=http://localhost:5001
+JWT_SECRET=your_super_secret_key_change_this
+```
+
+```cmd
+# Start Express server
+npm run dev
+```
+
+### Step 5 (Windows) — Frontend (React)
+
+```cmd
+cd frontend
+npm install
+npm run dev
+```
+
+### Step 6 (Windows) — Train ML Models + Start Flask
+
+```cmd
+cd ml
+venv\Scripts\activate
+
+# Train all models (run once)
+python generate_sample_data.py
+python model.py
+python ecosystem_model.py
+python otolith_model.py
+
+# For Feature 2 (Species)
+python download_dataset.py
+python species_model.py
+
+# Start Flask API
+python app.py
+```
+
+> ⚠️ **Windows Note:** If `opencv-python` fails, try:
+> ```cmd
+> pip install opencv-python-headless
+> ```
+
+---
+
+## 🖥️ Running All Services (3 Terminals)
+
+### macOS
 ```bash
 # Terminal 1 — Flask ML API
-cd ml && python app.py
+cd ml && source venv/bin/activate && python3 app.py
 
 # Terminal 2 — Express Backend
-cd server && npm run dev
+cd backend && npm run dev
 
 # Terminal 3 — React Frontend
-cd client && npm run dev
+cd frontend && npm run dev
+```
+
+### Windows
+```cmd
+:: Terminal 1 — Flask ML API
+cd ml
+venv\Scripts\activate
+python app.py
+
+:: Terminal 2 — Express Backend
+cd backend
+npm run dev
+
+:: Terminal 3 — React Frontend
+cd frontend
+npm run dev
 ```
 
 ---
 
 ## 🌐 Service URLs
 
-| Service | URL | Status Check |
-|---------|-----|-------------|
+| Service | URL | Check |
+|---------|-----|-------|
 | React Frontend | http://localhost:5173 | Open in browser |
 | Express Backend | http://localhost:5000/api/health | Should return `{"status":"ok"}` |
-| Flask ML API | http://localhost:5001/health | Should return `{"status":"ok"}` |
+| Flask ML API | http://localhost:5001/health | Should return model status |
 | MongoDB | mongodb://localhost:27017/fishdb | Via mongosh |
+
+---
+
+## 👥 User Roles
+
+| Role | Features Available |
+|------|--------------------|
+| 🎣 Fisherman | Fish Prediction (simple), Species ID, History |
+| 🔬 Scientist | All 5 features (full technical mode) |
+| 📋 Policymaker | Ecosystem Health (simplified), History |
+| 🎓 PhD Student | All 5 features (research mode) |
+
+---
+
+## 🗃️ MongoDB Schemas
+
+| Collection | Description |
+|-----------|-------------|
+| `users` | Auth — name, email, bcrypt password, role |
+| `predictions` | Feature 1 — fish abundance results |
+| `speciesresults` | Feature 2 — species identification |
+| `ecosystemhealths` | Feature 3 — ecosystem assessments |
+| `otolithresults` | Feature 4 — otolith ring analyses |
+| `ednaresults` | Feature 5 — eDNA matches |
 
 ---
 
 ## 📡 API Reference
 
-### Flask API (Port 5001)
-
-#### `POST /predict`
-Predict fish abundance from ocean parameters.
-
-**Request Body:**
-```json
-{
-  "temperature": 27.5,
-  "salinity": 33.2,
-  "oxygen": 6.1,
-  "chlorophyll": 1.5,
-  "month": 6,
-  "depth": 100
-}
+### Auth Endpoints
+```
+POST /api/auth/register    → Register new user
+POST /api/auth/login       → Login + get JWT token
+GET  /api/auth/me          → Get current user info
 ```
 
-**Response:**
-```json
-{
-  "fish_abundance_kg_km2": 121.26,
-  "rf_prediction": 121.23,
-  "xgb_prediction": 121.29,
-  "category": "High",
-  "color": "#2e7d32"
-}
+### Feature Endpoints (require JWT Bearer token)
+```
+POST /api/predict              → Fish abundance prediction
+GET  /api/history              → Past predictions
+POST /api/identify-species     → Species identification (image)
+GET  /api/species-history      → Past identifications
+POST /api/ecosystem-health     → Ecosystem assessment
+GET  /api/ecosystem-history    → Past assessments
+POST /api/analyze-otolith      → Otolith ring analysis (image)
+GET  /api/otolith-history      → Past analyses
+POST /api/match-edna           → eDNA species match
+GET  /api/edna-history         → Past matches
 ```
 
-#### `GET /map-data`
-Returns 500 sampled records for the Leaflet map.
+---
+
+## 🐛 Common Issues & Fixes
+
+| Problem | OS | Fix |
+|---------|-----|-----|
+| `tensorflow` not found | macOS M1 | Use `tensorflow-macos` + `tensorflow-metal` |
+| `python` not recognized | Windows | Install Python and add to PATH |
+| `mongod` not found | Windows | Add MongoDB bin folder to system PATH |
+| `ECONNREFUSED 5001` | Both | Flask not running — run `python app.py` |
+| `ECONNREFUSED 5000` | Both | Express not running — run `npm run dev` |
+| `JWT_SECRET missing` | Both | Check `.env` file is in `backend/` folder |
+| `cv2` import error | Both | Run `pip install opencv-python` |
+| `No module Bio` | Both | Run `pip install biopython` |
+| `pkl file not found` | Both | Run model training scripts first |
+| History shows zeros | Both | Clear DB: `db.predictions.deleteMany({})` |
+| `venv\Scripts\activate` fails | Windows | Run PowerShell as Admin, then: `Set-ExecutionPolicy RemoteSigned` |
+| Port 5173 in use | Both | Change port: `npm run dev -- --port 3000` |
 
 ---
 
-### Express API (Port 5000)
+## 🧹 Database Reset (if needed)
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `POST` | `/api/predict` | Forward to Flask + save to MongoDB |
-| `GET` | `/api/history` | Get last 50 predictions |
-| `GET` | `/api/map-data` | Proxy Flask map data |
-| `DELETE` | `/api/history/:id` | Delete a prediction record |
-| `GET` | `/api/health` | Health check |
-
----
-
-## 🧠 ML Model Details
-
-### Input Features
-
-| Feature | Unit | Range |
-|---------|------|-------|
-| Sea Surface Temperature | °C | 0 – 40 |
-| Salinity | PSU | 0 – 45 |
-| Dissolved Oxygen | mg/L | 0 – 15 |
-| Chlorophyll-a | mg/m³ | 0 – 20 |
-| Month | 1–12 | 1 – 12 |
-| Depth | m | 1 – 1000 |
-
-### Target Variable
-- **Fish Abundance** — kg/km²
-
-### Models Used
-- **Random Forest Regressor** — 200 trees, max depth 12
-- **XGBoost Regressor** — 300 estimators, learning rate 0.05
-- **Ensemble** — Average of RF + XGBoost predictions
-
-### Abundance Categories
-
-| Category | Range |
-|----------|-------|
-| 🟢 High | ≥ 80 kg/km² |
-| 🟡 Medium | 40 – 79 kg/km² |
-| 🔴 Low | < 40 kg/km² |
-
----
-
-## 📊 Features
-
-- **Interactive sliders** for all 6 ocean parameters
-- **Ensemble ML prediction** (RF + XGBoost average)
-- **Leaflet.js map** with color-coded Indian EEZ zones
-- **Real-time charts** — Temperature vs Abundance, Month-wise distribution
-- **Prediction history** with sort, filter, search, pagination
-- **CSV export** of all predictions
-- **MongoDB persistence** for all predictions
-
----
-
-## 🗃️ Database Schema
-
-```javascript
-// Prediction Document
-{
-  _id: ObjectId,
-  input: {
-    temperature: Number,   // °C
-    salinity: Number,      // PSU
-    oxygen: Number,        // mg/L
-    chlorophyll: Number,   // mg/m³
-    month: Number,         // 1–12
-    depth: Number          // meters
-  },
-  fish_abundance: Number,  // kg/km² (ensemble)
-  rf_prediction: Number,
-  xgb_prediction: Number,
-  category: "High" | "Medium" | "Low",
-  latitude: Number,
-  longitude: Number,
-  createdAt: Date,
-  updatedAt: Date
-}
+```bash
+mongosh fishdb
+db.predictions.deleteMany({})
+db.speciesresults.deleteMany({})
+db.ecosystemhealths.deleteMany({})
+db.otolithresults.deleteMany({})
+db.ednaresults.deleteMany({})
+exit
 ```
 
 ---
 
 ## 🌊 Real Data Sources
 
-For production use, replace the synthetic dataset with real oceanographic data:
+For production deployment, replace synthetic datasets with:
 
 | Source | URL | Data |
 |--------|-----|------|
-| INCOIS | [incois.gov.in](https://www.incois.gov.in) | Indian ocean data |
-| CMEMS | [marine.copernicus.eu](https://marine.copernicus.eu) | Global ocean parameters |
-| NASA OceanColor | [oceancolor.gsfc.nasa.gov](https://oceancolor.gsfc.nasa.gov) | Chlorophyll-a |
-| NOAA | [noaa.gov](https://www.noaa.gov) | SST, salinity |
-
----
-
-## 🐛 Common Issues
-
-| Problem | Solution |
-|---------|----------|
-| `ECONNREFUSED 5001` | Flask is not running — run `python app.py` in `ml/` |
-| `ECONNREFUSED 5000` | Express is not running — run `npm run dev` in `server/` |
-| `MongoServerError` | MongoDB not running — run `mongod` |
-| History shows zeros | Clear DB: `db.predictions.deleteMany({})` and re-predict |
-| Map not loading | Check internet connection (OpenStreetMap tiles need internet) |
-| `pkl file not found` | Run `python model.py` first to generate model files |
-
----
-
-## 👨‍💻 Development
-
-```bash
-# Check MongoDB records
-mongosh fishdb
-db.predictions.find().pretty()
-db.predictions.deleteMany({})   # clear all records
-
-# Test Flask directly
-curl -X POST http://localhost:5001/predict \
-  -H "Content-Type: application/json" \
-  -d '{"temperature":27,"salinity":33,"oxygen":6,"chlorophyll":1.5,"month":6,"depth":100}'
-
-# Test Express
-curl http://localhost:5000/api/history
-```
+| INCOIS | https://www.incois.gov.in | Indian ocean parameters |
+| CMEMS | https://marine.copernicus.eu | Global ocean data |
+| NASA OceanColor | https://oceancolor.gsfc.nasa.gov | Chlorophyll-a |
+| NCBI GenBank | https://www.ncbi.nlm.nih.gov | DNA sequences |
+| iNaturalist | https://www.inaturalist.org | Species photos |
 
 ---
 
 ## 📄 License
 
-This project is built for academic purposes under **CMLRE — Centre for Marine Living Resources and Ecology, India**.
+Academic project — CMLRE Centre for Marine Living Resources and Ecology, India.
 
 ---
 
-## Acknowledgements
+## 🙏 Acknowledgements
 
 - [CMLRE](http://www.cmlre.gov.in/) — Centre for Marine Living Resources and Ecology
 - [INCOIS](https://www.incois.gov.in/) — Indian National Centre for Ocean Information Services
-- [Scikit-learn](https://scikit-learn.org/) — Random Forest implementation
-- [XGBoost](https://xgboost.readthedocs.io/) — Gradient boosting library
+- [Scikit-learn](https://scikit-learn.org/) — ML library
+- [TensorFlow / Keras](https://tensorflow.org/) — Deep learning
+- [XGBoost](https://xgboost.readthedocs.io/) — Gradient boosting
+- [OpenCV](https://opencv.org/) — Computer vision
+- [BioPython](https://biopython.org/) — Bioinformatics
 - [Leaflet.js](https://leafletjs.com/) — Interactive maps
 - [OpenStreetMap](https://www.openstreetmap.org/) — Map tiles
