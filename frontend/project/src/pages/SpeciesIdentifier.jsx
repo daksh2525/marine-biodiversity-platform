@@ -2,24 +2,20 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import { identifySpecies, getSpeciesHistory, deleteSpeciesRecord } from "../services/api";
 import speciesDatabase, { getSpeciesData, getConservationColor, getFishImage } from "../data/speciesDatabase";
 import "../styles/SpeciesIdentifier.css";
-async function validateImage(file) {
-  // 1. Extension check
-  const ext = file.name.split(".").pop().toLowerCase();
-  if (!["jpg","jpeg","png"].includes(ext))
-    return { valid: false, error: "Only JPG and PNG images are allowed." };
 
-  // 2. Size check (10 MB)
+/* ── Image validation ─────────────────────────────────────────────────────── */
+async function validateImage(file) {
+  const ext = file.name.split(".").pop().toLowerCase();
+  if (!["jpg", "jpeg", "png"].includes(ext))
+    return { valid: false, error: "Only JPG and PNG images are allowed." };
   if (file.size > 10 * 1024 * 1024)
     return { valid: false, error: "File too large. Maximum size is 10 MB." };
-
-  // 3. Dimension check — screenshots are typically very wide
   return new Promise((resolve) => {
     const img = new Image();
     img.onload = () => {
       URL.revokeObjectURL(img.src);
       if (img.width > 4000 || img.height > 4000)
-        return resolve({ valid: false,
-          error: "Image resolution too high. Please use a photo under 4000×4000 px." });
+        return resolve({ valid: false, error: "Image resolution too high. Please use a photo under 4000×4000 px." });
       resolve({ valid: true });
     };
     img.onerror = () => resolve({ valid: false, error: "Could not read image file." });
@@ -27,40 +23,28 @@ async function validateImage(file) {
   });
 }
 
-const CONSERVATION_COLORS = {
-  "Least Concern":   "#2e7d32",
-  "Near Threatened": "#f57f17",
-  "Vulnerable":      "#e65100",
-  "Endangered":      "#c62828",
-  "Not evaluated":   "#607d8b",
-};
-
+/* ── Conservation badge ───────────────────────────────────────────────────── */
 function ConservationBadge({ status }) {
-  const color = getConservationColor(status) || "#607d8b";
+  const color = getConservationColor(status) || "#4a6a82";
   return (
-    <span style={{
-      display: "inline-block", padding: ".2rem .7rem", borderRadius: "20px",
-      background: color, color: "#fff", fontSize: ".75rem", fontWeight: 700,
-    }}>
+    <span className="conservation-badge" style={{ background: color }}>
       {status || "Not evaluated"}
     </span>
   );
 }
 
-// ── Error card with tip ───────────────────────────────────────────────────────
+/* ── Validation error ─────────────────────────────────────────────────────── */
 function ValidationError({ error, tip, onRetry }) {
   return (
     <div className="val-error-box">
       <div className="val-error-title">⚠️ {error}</div>
       {tip && <p className="val-error-tip">💡 {tip}</p>}
-      <button className="val-retry-btn" onClick={onRetry}>
-        📁 Upload Different Image
-      </button>
+      <button className="val-retry-btn" onClick={onRetry}>📁 Upload Different Image</button>
     </div>
   );
 }
 
-// ── Fish photo component ──────────────────────────────────────────────────────
+/* ── Fish photo ───────────────────────────────────────────────────────────── */
 function FishPhoto({ label, name }) {
   const [src,    setSrc]    = useState(null);
   const [loaded, setLoaded] = useState(false);
@@ -68,19 +52,15 @@ function FishPhoto({ label, name }) {
 
   useEffect(() => {
     const url = getFishImage(label);
-    setSrc(url);
-    setLoaded(false);
-    setError(false);
+    setSrc(url); setLoaded(false); setError(false);
   }, [label]);
 
   if (!src || error) return null;
-
   return (
     <div className="fish-photo-wrapper">
       {!loaded && <div className="fish-photo-skeleton" />}
       <img
-        src={src}
-        alt={`Photo of ${name}`}
+        src={src} alt={`Photo of ${name}`}
         className={`fish-photo ${loaded ? "loaded" : ""}`}
         onLoad={() => setLoaded(true)}
         onError={() => setError(true)}
@@ -90,22 +70,39 @@ function FishPhoto({ label, name }) {
   );
 }
 
+/* ── Confidence bar ───────────────────────────────────────────────────────── */
+function ConfidenceBar({ value }) {
+  const color = value >= 80 ? "#22c55e" : value >= 50 ? "#f59e0b" : "#ef4444";
+  return (
+    <div className="confidence-section">
+      <div className="confidence-label">
+        <span>AI Confidence</span>
+        <strong>{value?.toFixed(1)}%</strong>
+      </div>
+      <div className="confidence-bar-bg">
+        <div className="confidence-bar-fill"
+          style={{ width: `${value}%`, background: color }} />
+      </div>
+    </div>
+  );
+}
+
+/* ─────────────────────────────── Main ─────────────────────────────────────── */
 export default function SpeciesIdentifier() {
-  const [file,       setFile]       = useState(null);
-  const [preview,    setPreview]    = useState(null);
-  const [result,     setResult]     = useState(null);
-  const [dbInfo,     setDbInfo]     = useState(null);   // ← species DB lookup
-  const [loading,    setLoading]    = useState(false);
-  const [error,      setError]      = useState("");
-  const [errorTip,   setErrorTip]   = useState("");
-  const [dragOver,   setDragOver]   = useState(false);
-  const [history,    setHistory]    = useState([]);
-  const [histLoading,setHistLoading]= useState(false);
-  const [showHistory,setShowHistory]= useState(false);
-  const [deleting,   setDeleting]   = useState(null);
+  const [file,        setFile]        = useState(null);
+  const [preview,     setPreview]     = useState(null);
+  const [result,      setResult]      = useState(null);
+  const [dbInfo,      setDbInfo]      = useState(null);
+  const [loading,     setLoading]     = useState(false);
+  const [error,       setError]       = useState("");
+  const [errorTip,    setErrorTip]    = useState("");
+  const [dragOver,    setDragOver]    = useState(false);
+  const [history,     setHistory]     = useState([]);
+  const [histLoading, setHistLoading] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
+  const [deleting,    setDeleting]    = useState(null);
   const inputRef = useRef();
 
-  // ── Load history ─────────────────────────────────────────────────────────
   const loadHistory = () => {
     setHistLoading(true);
     getSpeciesHistory()
@@ -113,16 +110,11 @@ export default function SpeciesIdentifier() {
       .catch(() => setHistLoading(false));
   };
 
-  const toggleHistory = () => {
-    if (!showHistory) loadHistory();
-    setShowHistory(v => !v);
-  };
+  const toggleHistory = () => { if (!showHistory) loadHistory(); setShowHistory(v => !v); };
 
-  // ── File handling ─────────────────────────────────────────────────────────
   const handleFile = useCallback(async (f) => {
     if (!f) return;
     setError(""); setErrorTip(""); setResult(null); setDbInfo(null);
-
     const check = await validateImage(f);
     if (!check.valid) {
       setError(check.error);
@@ -146,20 +138,16 @@ export default function SpeciesIdentifier() {
     if (inputRef.current) inputRef.current.value = "";
   };
 
-  // ── Identify ──────────────────────────────────────────────────────────────
   const handleIdentify = async () => {
     if (!file) { setError("Please upload a fish image first."); return; }
     setLoading(true); setError(""); setErrorTip(""); setResult(null); setDbInfo(null);
     try {
       const res = await identifySpecies(file);
       setResult(res);
-
-      // ── DB lookup ─────────────────────────────────────────────────────
       const info = getSpeciesData(res.common_name)
                 || getSpeciesData(res.species_key)
                 || getSpeciesData(res.scientific_name);
       setDbInfo(info);
-
       if (showHistory) loadHistory();
     } catch (e) {
       const apiErr = e.response?.data;
@@ -177,31 +165,35 @@ export default function SpeciesIdentifier() {
     setDeleting(null);
   };
 
-  // Merge API result with DB info — DB info takes priority for missing fields
   const displayInfo = {
-    common_name:     result?.common_name     || "Unknown",
+    common_name:     result?.common_name                          || "Unknown",
     scientific_name: dbInfo?.scientificName  || result?.scientific_name || "Unknown",
     habitat:         dbInfo?.habitat         || result?.habitat          || "Unknown",
     conservation:    dbInfo?.conservationStatus || result?.conservation  || "Not evaluated",
     description:     dbInfo?.description     || result?.description      || "No description available.",
     depth:           dbInfo?.depth           || null,
-    avgLength:       dbInfo?.avgLength        || null,
-    indiaRegion:     dbInfo?.indiaRegion      || null,
+    avgLength:       dbInfo?.avgLength       || null,
+    indiaRegion:     dbInfo?.indiaRegion     || null,
   };
 
   return (
     <div className="species-page">
+
+      {/* ── Header ── */}
       <div className="species-header">
         <h1>🐠 Fish Species Identifier</h1>
         <p>Upload a fish photo — AI identifies the species using deep learning</p>
       </div>
 
       <div className="species-grid">
-        {/* ── Upload ── */}
+
+        {/* ══ LEFT: Upload ══ */}
         <div className="species-upload-col">
+
+          {/* Drop zone */}
           <div
             className={`drop-zone ${dragOver ? "drag-over" : ""} ${preview ? "has-preview" : ""}`}
-            style={error && !preview ? { borderColor: "#c62828" } : {}}
+            style={error && !preview ? { borderColor: "rgba(239,68,68,0.5)" } : {}}
             onDrop={onDrop}
             onDragOver={e => { e.preventDefault(); setDragOver(true); }}
             onDragLeave={() => setDragOver(false)}
@@ -219,7 +211,7 @@ export default function SpeciesIdentifier() {
                 <span className="drop-icon">📷</span>
                 <p>Drag & drop a fish image here</p>
                 <p className="drop-sub">or click to browse</p>
-                <p className="drop-formats">JPG, PNG — max 10 MB</p>
+                <p className="drop-formats">JPG · PNG · max 10 MB</p>
               </div>
             )}
           </div>
@@ -233,25 +225,19 @@ export default function SpeciesIdentifier() {
             </button>
           )}
 
-          <button className="btn-identify" onClick={handleIdentify}
-            disabled={!file || loading}>
+          <button className="btn-identify" onClick={handleIdentify} disabled={!file || loading}>
             {loading
               ? <><span className="spinner" /> Identifying…</>
-              : "🔬 Identify Species"}
+              : "🔬 Identify Species"
+            }
           </button>
 
-          {/* Validation / API error */}
-          {error && (
-            <ValidationError
-              error={error}
-              tip={errorTip}
-              onRetry={clearImage}
-            />
-          )}
+          {error && <ValidationError error={error} tip={errorTip} onRetry={clearImage} />}
         </div>
 
-        {/* ── Result ── */}
+        {/* ══ RIGHT: Result ══ */}
         <div className="species-result-col">
+
           {!result && !loading && !error && (
             <div className="result-placeholder">
               <span>🐟</span>
@@ -268,15 +254,12 @@ export default function SpeciesIdentifier() {
 
           {result && !loading && (
             <div className="result-card-species"
-              style={{ borderLeft: `4px solid ${getConservationColor(displayInfo.conservation)}` }}>
+              style={{ borderLeft: `4px solid ${getConservationColor(displayInfo.conservation) || "#4a6a82"}` }}>
 
-              {/* ── Fish photo ── */}
-              <FishPhoto
-                label={result.species_key || result.common_name}
-                name={displayInfo.common_name}
-              />
+              {/* Wikipedia photo */}
+              <FishPhoto label={result.species_key || result.common_name} name={displayInfo.common_name} />
 
-              {/* Names */}
+              {/* Name + badge */}
               <div className="result-top">
                 <div className="result-names">
                   <h2>{displayInfo.common_name}</h2>
@@ -286,19 +269,7 @@ export default function SpeciesIdentifier() {
               </div>
 
               {/* Confidence */}
-              <div className="confidence-section">
-                <div className="confidence-label">
-                  <span>AI Confidence</span>
-                  <strong>{result.confidence?.toFixed(1)}%</strong>
-                </div>
-                <div className="confidence-bar-bg">
-                  <div className="confidence-bar-fill" style={{
-                    width: `${result.confidence}%`,
-                    background: result.confidence >= 80 ? "#2e7d32"
-                              : result.confidence >= 50 ? "#f57f17" : "#c62828",
-                  }} />
-                </div>
-              </div>
+              <ConfidenceBar value={result.confidence} />
 
               {/* Info grid */}
               <div className="info-grid">
@@ -308,7 +279,7 @@ export default function SpeciesIdentifier() {
                 </div>
                 <div className="info-item">
                   <span>🛡️ Conservation</span>
-                  <strong style={{ color: getConservationColor(displayInfo.conservation) }}>
+                  <strong style={{ color: getConservationColor(displayInfo.conservation) || "var(--text-secondary)" }}>
                     {displayInfo.conservation}
                   </strong>
                 </div>
@@ -346,8 +317,7 @@ export default function SpeciesIdentifier() {
                       <span className="top3-rank">#{t.rank}</span>
                       <span className="top3-name">{t.common_name}</span>
                       <div className="top3-bar-bg">
-                        <div className="top3-bar-fill"
-                          style={{ width: `${t.confidence}%`, opacity: 1 - (t.rank - 1) * 0.25 }} />
+                        <div className="top3-bar-fill" style={{ width: `${t.confidence}%`, opacity: 1 - (t.rank - 1) * 0.25 }} />
                       </div>
                       <span className="top3-pct">{t.confidence?.toFixed(1)}%</span>
                     </div>
@@ -376,8 +346,10 @@ export default function SpeciesIdentifier() {
                 {history.map(r => {
                   const hInfo = getSpeciesData(r.common_name) || getSpeciesData(r.species_key);
                   const cons  = hInfo?.conservationStatus || r.conservation || "Not evaluated";
+                  const consColor = getConservationColor(cons) || "#4a6a82";
                   return (
-                    <div className="history-card" key={r._id}>
+                    <div className="history-card" key={r._id}
+                      style={{ borderTop: `3px solid ${consColor}` }}>
                       <div className="hc-top">
                         <div>
                           <strong>{r.common_name}</strong>
@@ -391,18 +363,18 @@ export default function SpeciesIdentifier() {
                       </div>
                       <div className="hc-meta">
                         <ConservationBadge status={cons} />
-                        <span className="hc-conf">{r.confidence?.toFixed(1)}% confidence</span>
+                        <span className="hc-conf">{r.confidence?.toFixed(1)}% conf.</span>
                       </div>
                       {hInfo?.indiaRegion && (
-                        <p style={{ fontSize: ".75rem", color: "#607d8b", marginTop: ".3rem" }}>
+                        <p style={{ fontSize: ".72rem", color: "#fbbf24", marginTop: ".3rem" }}>
                           🇮🇳 {hInfo.indiaRegion}
                         </p>
                       )}
-                      <div className="confidence-bar-bg" style={{ marginTop: ".4rem" }}>
+                      <div className="confidence-bar-bg" style={{ marginTop: ".5rem" }}>
                         <div className="confidence-bar-fill" style={{
                           width: `${r.confidence}%`,
-                          background: r.confidence >= 80 ? "#2e7d32"
-                                    : r.confidence >= 50 ? "#f57f17" : "#c62828",
+                          background: r.confidence >= 80 ? "#22c55e"
+                                    : r.confidence >= 50 ? "#f59e0b" : "#ef4444",
                         }} />
                       </div>
                       <p className="hc-date">{new Date(r.createdAt).toLocaleString()}</p>

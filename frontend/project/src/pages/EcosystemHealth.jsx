@@ -12,7 +12,6 @@ import "../styles/EcosystemHealth.css";
 
 Chart.register(...registerables);
 
-// ── Map fly-to helper ─────────────────────────────────────────────────────────
 function MapController({ center, zoom }) {
   const map = useMap();
   useEffect(() => {
@@ -21,39 +20,78 @@ function MapController({ center, zoom }) {
   return null;
 }
 
-// ── Parameter config ──────────────────────────────────────────────────────────
 const PARAMS = [
-  { key: "temperature",  label: "Sea Surface Temp",    unit: "°C",     min: 15,  max: 40,  step: 0.1,  default: 27,  optimal: "25–28°C" },
-  { key: "salinity",     label: "Salinity",             unit: "PSU",    min: 20,  max: 42,  step: 0.1,  default: 34,  optimal: "33–35 PSU" },
-  { key: "dissolved_o2", label: "Dissolved Oxygen",    unit: "mg/L",   min: 0,   max: 15,  step: 0.1,  default: 6.5, optimal: "6–8 mg/L" },
-  { key: "chlorophyll",  label: "Chlorophyll-a",       unit: "mg/m³",  min: 0,   max: 20,  step: 0.1,  default: 1.5, optimal: "0.5–2 mg/m³" },
-  { key: "ph",           label: "pH Level",             unit: "",       min: 7.0, max: 8.8, step: 0.01, default: 8.1, optimal: "8.0–8.3" },
-  { key: "nitrate",      label: "Nitrate",              unit: "µmol/L", min: 0,   max: 50,  step: 0.1,  default: 5,   optimal: "< 5 µmol/L" },
-  { key: "fish_index",   label: "Fish Abundance Index", unit: "",       min: 0,   max: 100, step: 1,    default: 60,  optimal: "> 60" },
-  { key: "biodiversity", label: "Biodiversity Index",   unit: "",       min: 0,   max: 100, step: 1,    default: 65,  optimal: "> 60" },
+  { key: "temperature",  label: "Sea Surface Temp",     unit: "°C",     min: 15,  max: 40,  step: 0.1,  default: 27,  optimal: "25–28°C" },
+  { key: "salinity",     label: "Salinity",              unit: "PSU",    min: 20,  max: 42,  step: 0.1,  default: 34,  optimal: "33–35 PSU" },
+  { key: "dissolved_o2", label: "Dissolved Oxygen",     unit: "mg/L",   min: 0,   max: 15,  step: 0.1,  default: 6.5, optimal: "6–8 mg/L" },
+  { key: "chlorophyll",  label: "Chlorophyll-a",        unit: "mg/m³",  min: 0,   max: 20,  step: 0.1,  default: 1.5, optimal: "0.5–2 mg/m³" },
+  { key: "ph",           label: "pH Level",              unit: "",       min: 7.0, max: 8.8, step: 0.01, default: 8.1, optimal: "8.0–8.3" },
+  { key: "nitrate",      label: "Nitrate",               unit: "µmol/L", min: 0,   max: 50,  step: 0.1,  default: 5,   optimal: "< 5 µmol/L" },
+  { key: "fish_index",   label: "Fish Abundance Index",  unit: "",       min: 0,   max: 100, step: 1,    default: 60,  optimal: "> 60" },
+  { key: "biodiversity", label: "Biodiversity Index",    unit: "",       min: 0,   max: 100, step: 1,    default: 65,  optimal: "> 60" },
 ];
 
-const CAT_COLOR = { Healthy: "#2e7d32", Moderate: "#f57f17", Critical: "#c62828" };
+const CAT_COLOR = { Healthy: "#16a34a", Moderate: "#d97706", Critical: "#dc2626" };
 const CAT_ICON  = { Healthy: "🟢", Moderate: "🟡", Critical: "🔴" };
 const MONTHS    = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
+/* ── Slider with dynamic fill ─────────────────────────────────────────────── */
+function SliderRow({ p, value, onChange }) {
+  const pct = ((value - p.min) / (p.max - p.min)) * 100;
+  return (
+    <div className="eco-slider-row">
+      <div className="eco-slider-label">
+        <span>{p.label}</span>
+        <span className="eco-slider-val">{value}{p.unit}</span>
+      </div>
+      <input
+        type="range" min={p.min} max={p.max} step={p.step} value={value}
+        onChange={e => onChange(Number(e.target.value))}
+        style={{ background: `linear-gradient(to right, #06b6d4 ${pct}%, #1a3347 ${pct}%)` }}
+      />
+      <div className="eco-slider-meta">
+        <span>{p.min}{p.unit}</span>
+        <span className="optimal">Optimal: {p.optimal}</span>
+        <span>{p.max}{p.unit}</span>
+      </div>
+    </div>
+  );
+}
+
+/* ── Zone dropdown with custom chevron ───────────────────────────────────── */
+function ZoneSelect({ value, onChange }) {
+  return (
+    <div className="zone-select-wrapper">
+      <select className="zone-select" value={value} onChange={e => onChange(e.target.value)}>
+        <option value="">Select a zone to auto-fill…</option>
+        {Object.keys(INDIAN_OCEAN_ZONES).map(k => (
+          <option key={k} value={k}>{k}</option>
+        ))}
+      </select>
+      <svg className="zone-select-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+      </svg>
+    </div>
+  );
+}
 
 export default function EcosystemHealth() {
   const { user } = useAuth();
   const isPolicymaker = user?.role === "policymaker";
 
-  const [values,      setValues]      = useState(Object.fromEntries(PARAMS.map(p => [p.key, p.default])));
-  const [result,      setResult]      = useState(null);
-  const [loading,     setLoading]     = useState(false);
-  const [error,       setError]       = useState("");
-  const [history,     setHistory]     = useState([]);
-  const [zones,       setZones]       = useState([]);
-  const [deleting,    setDeleting]    = useState(null);
-  const [showHist,    setShowHist]    = useState(false);
-  const [selectedZone,setSelectedZone]= useState("");
-  const [zoneLoaded,  setZoneLoaded]  = useState(false);
-  const [zoneMarker,  setZoneMarker]  = useState(null);
-  const [mapCenter,   setMapCenter]   = useState([15, 78]);
-  const [mapZoom,     setMapZoom]     = useState(5);
+  const [values,       setValues]       = useState(Object.fromEntries(PARAMS.map(p => [p.key, p.default])));
+  const [result,       setResult]       = useState(null);
+  const [loading,      setLoading]      = useState(false);
+  const [error,        setError]        = useState("");
+  const [history,      setHistory]      = useState([]);
+  const [zones,        setZones]        = useState([]);
+  const [deleting,     setDeleting]     = useState(null);
+  const [showHist,     setShowHist]     = useState(false);
+  const [selectedZone, setSelectedZone] = useState("");
+  const [zoneLoaded,   setZoneLoaded]   = useState(false);
+  const [zoneMarker,   setZoneMarker]   = useState(null);
+  const [mapCenter,    setMapCenter]    = useState([15, 78]);
+  const [mapZoom,      setMapZoom]      = useState(5);
 
   const gaugeRef  = useRef(); const gaugeChart  = useRef();
   const impactRef = useRef(); const impactChart = useRef();
@@ -63,50 +101,30 @@ export default function EcosystemHealth() {
     getEcosystemZones().then(setZones).catch(() => {});
   }, []);
 
-  const loadHistory = () =>
-    getEcosystemHistory().then(setHistory).catch(() => {});
+  const loadHistory = () => getEcosystemHistory().then(setHistory).catch(() => {});
+  const toggleHistory = () => { if (!showHist) loadHistory(); setShowHist(v => !v); };
 
-  const toggleHistory = () => {
-    if (!showHist) loadHistory();
-    setShowHist(v => !v);
-  };
-
-  // ── Zone selection ────────────────────────────────────────────────────────
   const handleZoneSelect = async (zoneName) => {
     setSelectedZone(zoneName);
     setZoneLoaded(false);
     setResult(null);
     setError("");
     if (!zoneName || !INDIAN_OCEAN_ZONES[zoneName]) return;
-
     const z = INDIAN_OCEAN_ZONES[zoneName];
-    setValues({
-      temperature:  z.temp,
-      salinity:     z.salinity,
-      dissolved_o2: z.dissolved_o2,
-      chlorophyll:  z.chlorophyll,
-      ph:           z.ph,
-      nitrate:      z.nitrate,
-      fish_index:   z.fish_index,
-      biodiversity: z.biodiversity,
-    });
+    setValues({ temperature: z.temp, salinity: z.salinity, dissolved_o2: z.dissolved_o2,
+      chlorophyll: z.chlorophyll, ph: z.ph, nitrate: z.nitrate,
+      fish_index: z.fish_index, biodiversity: z.biodiversity });
     setMapCenter([z.lat, z.lng]);
     setMapZoom(z.zoom);
-    setZoneMarker({ lat: z.lat, lng: z.lng, name: zoneName,
-                    desc: z.description, health: z.healthLevel });
+    setZoneMarker({ lat: z.lat, lng: z.lng, name: zoneName, desc: z.description, health: z.healthLevel });
     setZoneLoaded(true);
-
-    // Policymaker: auto-assess on zone select
     if (isPolicymaker) {
-      await runAssess({
-        temperature: z.temp, salinity: z.salinity, dissolved_o2: z.dissolved_o2,
+      await runAssess({ temperature: z.temp, salinity: z.salinity, dissolved_o2: z.dissolved_o2,
         chlorophyll: z.chlorophyll, ph: z.ph, nitrate: z.nitrate,
-        fish_index: z.fish_index, biodiversity: z.biodiversity,
-      }, z.lat, z.lng);
+        fish_index: z.fish_index, biodiversity: z.biodiversity }, z.lat, z.lng);
     }
   };
 
-  // ── Assess ────────────────────────────────────────────────────────────────
   const runAssess = async (params, lat, lng) => {
     setLoading(true); setError("");
     try {
@@ -122,20 +140,17 @@ export default function EcosystemHealth() {
     }
   };
 
-  const handleAssess = () => runAssess(values, null, null);
-
-  // ── Charts ────────────────────────────────────────────────────────────────
   useEffect(() => {
     if (!result || !gaugeRef.current) return;
     gaugeChart.current?.destroy();
     gaugeChart.current = new Chart(gaugeRef.current, {
       type: "doughnut",
       data: { datasets: [{ data: [result.health_score, 100 - result.health_score],
-        backgroundColor: [CAT_COLOR[result.category], "#1e3a5a"],
+        backgroundColor: [CAT_COLOR[result.category], "#112540"],
         borderWidth: 0, circumference: 180, rotation: 270 }] },
       options: { responsive: true, cutout: "75%",
         plugins: { legend: { display: false }, tooltip: { enabled: false } },
-        animation: { duration: 800 } },
+        animation: { duration: 900 } },
     });
     if (!impactRef.current) return;
     impactChart.current?.destroy();
@@ -144,13 +159,17 @@ export default function EcosystemHealth() {
     impactChart.current = new Chart(impactRef.current, {
       type: "bar",
       data: { labels, datasets: [{ label: "Score (0–100)", data: vals,
-        backgroundColor: vals.map(v => v>=71?"#2e7d32":v>=41?"#f57f17":"#c62828"),
-        borderRadius: 6 }] },
+        backgroundColor: vals.map(v => v>=71?"#16a34a":v>=41?"#d97706":"#dc2626"),
+        borderRadius: 6, borderSkipped: false }] },
       options: { indexAxis: "y", responsive: true, animation: false,
         plugins: { legend: { display: false },
-          title: { display: true, text: "Parameter Health Scores", color: "#e0e6ed" } },
-        scales: { x: { min:0, max:100, ticks:{color:"#90caf9"}, grid:{color:"#1e3a5a"} },
-                  y: { ticks:{color:"#90caf9"}, grid:{color:"#1e3a5a"} } } },
+          title: { display: true, text: "Parameter Health Scores",
+            color: "#8fb4cc", font: { size: 11, weight: "600" } } },
+        scales: {
+          x: { min:0, max:100, ticks:{color:"#4a6a82",font:{size:10}}, grid:{color:"rgba(255,255,255,0.05)"} },
+          y: { ticks:{color:"#8fb4cc",font:{size:10}}, grid:{color:"rgba(255,255,255,0.05)"} }
+        }
+      },
     });
   }, [result]);
 
@@ -162,17 +181,16 @@ export default function EcosystemHealth() {
       type: "line",
       data: { labels: sorted.map(r=>{const d=new Date(r.createdAt);return`${d.getDate()} ${MONTHS[d.getMonth()]}`;}),
         datasets:[{ label:"Health Score", data:sorted.map(r=>r.health_score),
-          borderColor:"#1e90ff", backgroundColor:"rgba(30,144,255,.15)",
+          borderColor:"#06b6d4", backgroundColor:"rgba(6,182,212,0.08)",
           tension:0.4, fill:true, pointRadius:5,
-          pointBackgroundColor:sorted.map(r=>CAT_COLOR[r.category]??"#1e90ff") }] },
+          pointBackgroundColor:sorted.map(r=>CAT_COLOR[r.category]??"#06b6d4") }] },
       options:{ responsive:true, plugins:{legend:{display:false},
-        title:{display:true,text:"Health Score Trend",color:"#e0e6ed"}},
-        scales:{y:{min:0,max:100,ticks:{color:"#90caf9"},grid:{color:"#1e3a5a"}},
-                x:{ticks:{color:"#90caf9"},grid:{color:"#1e3a5a"}}} },
+        title:{display:true,text:"Health Score Trend",color:"#8fb4cc",font:{size:11,weight:"600"}}},
+        scales:{y:{min:0,max:100,ticks:{color:"#4a6a82"},grid:{color:"rgba(255,255,255,0.05)"}},
+                x:{ticks:{color:"#4a6a82"},grid:{color:"rgba(255,255,255,0.05)"}}} },
     });
   }, [history, showHist]);
 
-  // ── Delete ────────────────────────────────────────────────────────────────
   const handleDelete = async (id) => {
     setDeleting(id);
     await deleteEcosystemRecord(id).catch(()=>{});
@@ -182,46 +200,38 @@ export default function EcosystemHealth() {
 
   const exportCSV = () => {
     const h = ["Date","Score","Category","Temp","Salinity","O2","Chl-a","pH","Nitrate","Fish","Bio"];
-    const rows = history.map(r=>[
-      new Date(r.createdAt).toLocaleString(),
-      r.health_score, r.category,
-      r.parameters?.temperature, r.parameters?.salinity,
-      r.parameters?.dissolved_o2, r.parameters?.chlorophyll,
-      r.parameters?.ph, r.parameters?.nitrate,
-      r.parameters?.fish_index, r.parameters?.biodiversity,
-    ]);
+    const rows = history.map(r=>[new Date(r.createdAt).toLocaleString(),r.health_score,r.category,
+      r.parameters?.temperature,r.parameters?.salinity,r.parameters?.dissolved_o2,
+      r.parameters?.chlorophyll,r.parameters?.ph,r.parameters?.nitrate,
+      r.parameters?.fish_index,r.parameters?.biodiversity]);
     const csv=[h,...rows].map(r=>r.join(",")).join("\n");
     const a=document.createElement("a");
     a.href=`data:text/csv;charset=utf-8,${encodeURIComponent(csv)}`;
     a.download="ecosystem_health.csv"; a.click();
   };
 
-  // ── Policymaker simplified view ───────────────────────────────────────────
+  /* ── Policymaker view ─────────────────────────────────────────────────── */
   if (isPolicymaker) {
     const zone = selectedZone ? INDIAN_OCEAN_ZONES[selectedZone] : null;
     return (
-      <div style={{ maxWidth: 700, margin: "2rem auto", padding: "0 1rem" }}>
+      <div style={{ maxWidth: 680, margin: "2rem auto", padding: "0 1rem" }}>
         <div className="eco-header">
           <h1>🌊 Marine Ecosystem Health</h1>
           <p>Select a zone to assess ecosystem health</p>
         </div>
 
-        <div className="zone-selector-wrap">
-          <span className="zone-selector-label">🗺️ Select Indian Ocean Zone</span>
-          <select className="zone-select" value={selectedZone}
-            onChange={e => handleZoneSelect(e.target.value)}>
-            <option value="">Select a zone to assess…</option>
-            {Object.keys(INDIAN_OCEAN_ZONES).map(k => (
-              <option key={k} value={k}>{k}</option>
-            ))}
-          </select>
-          {zone && <p className="zone-description">📍 {zone.description}</p>}
+        <div className="eco-card" style={{ marginTop: "1.5rem" }}>
+          <div className="zone-selector-wrap" style={{ margin: 0 }}>
+            <span className="zone-selector-label">🗺️ Select Indian Ocean Zone</span>
+            <ZoneSelect value={selectedZone} onChange={handleZoneSelect} />
+            {zone && <p className="zone-description">📍 {zone.description}</p>}
+          </div>
         </div>
 
         {loading && (
-          <div className="simple-result-card">
+          <div className="eco-card" style={{ marginTop: "1rem", textAlign: "center", padding: "2.5rem" }}>
             <div className="eco-spinner" style={{ margin: "0 auto" }} />
-            <p style={{ color: "#90caf9", marginTop: ".8rem" }}>Assessing zone…</p>
+            <p style={{ color: "#8fb4cc", marginTop: "0.8rem", fontSize: "0.875rem" }}>Assessing zone…</p>
           </div>
         )}
 
@@ -235,21 +245,27 @@ export default function EcosystemHealth() {
                 <span className="gauge-label">/ 100</span>
               </div>
             </div>
-            <div className="cat-badge" style={{ background: CAT_COLOR[result.category], margin: ".6rem auto", display: "inline-block" }}>
-              {CAT_ICON[result.category]} {result.category}
+            <div>
+              <div className="cat-badge" style={{ background: CAT_COLOR[result.category] }}>
+                {CAT_ICON[result.category]} {result.category}
+              </div>
             </div>
             <div className="simple-result-tip">
               {result.category === "Healthy"  && "✅ This zone is HEALTHY — Fishing operations allowed"}
               {result.category === "Moderate" && "⚠️ This zone is MODERATE — Limit fishing activity"}
               {result.category === "Critical" && "🚨 This zone is CRITICAL — Fishing ban advised"}
             </div>
-            <div style={{ marginTop: "1rem" }}>
-              {result.recommendations?.map((r, i) => (
-                <p key={i} style={{ fontSize: ".85rem", color: "#b0bec5",
-                  padding: ".4rem .8rem", background: "#0d1b2a",
-                  borderRadius: "8px", marginBottom: ".4rem" }}>{r}</p>
-              ))}
-            </div>
+            {result.recommendations?.length > 0 && (
+              <div style={{ marginTop: "1rem" }}>
+                <ul className="rec-list" style={{ textAlign: "left" }}>
+                  {result.recommendations.map((r, i) => (
+                    <li key={i} className={r.startsWith("🚨")?"rec-critical":r.startsWith("⚠️")?"rec-warning":"rec-ok"}>
+                      {r}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
         )}
         {error && <div className="eco-error" style={{ marginTop: "1rem" }}>⚠️ {error}</div>}
@@ -257,7 +273,7 @@ export default function EcosystemHealth() {
     );
   }
 
-  // ── Scientist / PhD full view ─────────────────────────────────────────────
+  /* ── Scientist full view ──────────────────────────────────────────────── */
   return (
     <div className="eco-page">
       <div className="eco-header">
@@ -266,23 +282,22 @@ export default function EcosystemHealth() {
       </div>
 
       <div className="eco-main-grid">
-        {/* Left: Input */}
+        {/* ── LEFT: Inputs ── */}
         <div className="eco-input-col">
           <div className="eco-card">
 
             {/* Zone selector */}
-            <div className="zone-selector-wrap" style={{ margin: "0 0 1rem 0" }}>
+            <div className="zone-selector-wrap">
               <span className="zone-selector-label">🌊 Quick-fill Indian Ocean Zone</span>
-              <select className="zone-select" value={selectedZone}
-                onChange={e => handleZoneSelect(e.target.value)}>
-                <option value="">Select a zone to auto-fill…</option>
-                {Object.keys(INDIAN_OCEAN_ZONES).map(k => (
-                  <option key={k} value={k}>{k}</option>
-                ))}
-              </select>
+              <ZoneSelect value={selectedZone} onChange={handleZoneSelect} />
+
               {zoneLoaded && selectedZone && (
                 <>
-                  <div className="zone-loaded-badge">✅ Zone loaded!</div>
+                  <div className="zone-loaded-badge">
+                    <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#4ade80",
+                      display: "inline-block", boxShadow: "0 0 6px #4ade80" }} />
+                    {selectedZone} — loaded
+                  </div>
                   <p className="zone-description">
                     📍 {INDIAN_OCEAN_ZONES[selectedZone]?.description}
                   </p>
@@ -297,34 +312,25 @@ export default function EcosystemHealth() {
               )}
             </div>
 
-            <div className="or-divider">OR enter manually</div>
+            <div className="or-divider">or enter manually</div>
 
             <h3>Ocean Parameters</h3>
             {PARAMS.map(p => (
-              <div className="eco-slider-row" key={p.key}>
-                <div className="eco-slider-label">
-                  <span>{p.label}</span>
-                  <span className="eco-slider-val">{values[p.key]}{p.unit}</span>
-                </div>
-                <input type="range" min={p.min} max={p.max} step={p.step}
-                  value={values[p.key]}
-                  onChange={e => setValues(v => ({ ...v, [p.key]: Number(e.target.value) }))} />
-                <div className="eco-slider-meta">
-                  <span>{p.min}{p.unit}</span>
-                  <span className="optimal">Optimal: {p.optimal}</span>
-                  <span>{p.max}{p.unit}</span>
-                </div>
-              </div>
+              <SliderRow key={p.key} p={p} value={values[p.key]}
+                onChange={v => setValues(prev => ({ ...prev, [p.key]: v }))} />
             ))}
 
-            <button className="btn-assess" onClick={handleAssess} disabled={loading}>
-              {loading ? "⏳ Assessing…" : "🔬 Assess Ecosystem Health"}
+            <button className="btn-assess" onClick={() => runAssess(values, null, null)} disabled={loading}>
+              {loading
+                ? <><span className="eco-spinner" style={{width:16,height:16,borderWidth:2}} /> Assessing…</>
+                : <>🔬 Assess Ecosystem Health</>
+              }
             </button>
             {error && <div className="eco-error">{error}</div>}
           </div>
         </div>
 
-        {/* Right: Result */}
+        {/* ── RIGHT: Results ── */}
         <div className="eco-result-col">
           {!result && !loading && (
             <div className="eco-placeholder">
@@ -332,14 +338,17 @@ export default function EcosystemHealth() {
               <p>Select a zone or set parameters<br />and click "Assess Ecosystem Health"</p>
             </div>
           )}
+
           {loading && (
             <div className="eco-placeholder">
               <div className="eco-spinner" />
               <p>Analysing ecosystem parameters…</p>
             </div>
           )}
-          {result && (
+
+          {result && !loading && (
             <>
+              {/* Gauge */}
               <div className="eco-card gauge-card">
                 <h3>Ecosystem Health Score</h3>
                 <div className="gauge-wrapper">
@@ -349,25 +358,28 @@ export default function EcosystemHealth() {
                     <span className="gauge-label">/ 100</span>
                   </div>
                 </div>
-                <div className="cat-badge" style={{ background: CAT_COLOR[result.category] }}>
-                  {CAT_ICON[result.category]} {result.category}
+                <div>
+                  <div className="cat-badge" style={{ background: CAT_COLOR[result.category] }}>
+                    {CAT_ICON[result.category]} {result.category}
+                  </div>
                 </div>
                 <div className="eco-meta-row">
                   <span>Method: {result.method}</span>
-                  {result.ml_confidence > 0 &&
-                    <span>ML Confidence: {result.ml_confidence}%</span>}
+                  {result.ml_confidence > 0 && <span>ML Confidence: {result.ml_confidence}%</span>}
                 </div>
               </div>
 
-              <div className="eco-card"><canvas ref={impactRef} /></div>
+              {/* Bar chart */}
+              <div className="eco-card">
+                <canvas ref={impactRef} />
+              </div>
 
+              {/* Recommendations */}
               <div className="eco-card">
                 <h3>📋 Recommendations</h3>
                 <ul className="rec-list">
                   {result.recommendations?.map((r, i) => (
-                    <li key={i} className={
-                      r.startsWith("🚨")?"rec-critical":
-                      r.startsWith("⚠️")?"rec-warning":"rec-ok"}>
+                    <li key={i} className={r.startsWith("🚨")?"rec-critical":r.startsWith("⚠️")?"rec-warning":"rec-ok"}>
                       {r}
                     </li>
                   ))}
@@ -378,43 +390,36 @@ export default function EcosystemHealth() {
         </div>
       </div>
 
-      {/* Map */}
-      <div className="eco-card eco-map-section">
+      {/* ── Map ── */}
+      <div className="eco-card eco-map-section" style={{ margin: "1.25rem 1.5rem 0" }}>
         <h3>🗺️ Indian Ocean — Zone Health Map</h3>
         <div className="map-legend">
-          {Object.entries(CAT_COLOR).map(([k,v]) => (
-            <span key={k}><span className="dot" style={{ background: v }} /> {k}</span>
+          {Object.entries(CAT_COLOR).map(([k, v]) => (
+            <span key={k}><span className="dot" style={{ background: v }} />{k}</span>
           ))}
         </div>
         <MapContainer center={mapCenter} zoom={mapZoom}
-          style={{ height: "400px", borderRadius: "12px" }}>
-          <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            attribution='&copy; OpenStreetMap' />
+          style={{ height: "420px", borderRadius: "12px", width: "100%" }}>
+          <TileLayer
+            url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+            attribution='&copy; <a href="https://carto.com/">CARTO</a>'
+          />
           <MapController center={mapCenter} zoom={mapZoom} />
-
-          {/* Selected zone pulsing marker */}
           {zoneMarker && (
-            <CircleMarker
-              center={[zoneMarker.lat, zoneMarker.lng]}
-              radius={22}
-              pathOptions={{
-                color: ZONE_HEALTH_COLOR[zoneMarker.health] ?? "#1e90ff",
-                fillColor: ZONE_HEALTH_COLOR[zoneMarker.health] ?? "#1e90ff",
-                fillOpacity: 0.3, weight: 3,
-              }}>
+            <CircleMarker center={[zoneMarker.lat, zoneMarker.lng]} radius={22}
+              pathOptions={{ color: ZONE_HEALTH_COLOR[zoneMarker.health] ?? "#06b6d4",
+                fillColor: ZONE_HEALTH_COLOR[zoneMarker.health] ?? "#06b6d4",
+                fillOpacity: 0.3, weight: 3 }}>
               <Popup><b>{zoneMarker.name}</b><br />{zoneMarker.desc}</Popup>
             </CircleMarker>
           )}
-
-          {/* Past assessment zones */}
           {zones.map((z, i) => (
             <CircleMarker key={i} center={[z.latitude, z.longitude]} radius={9}
-              pathOptions={{ color: CAT_COLOR[z.category]??"#607d8b",
-                fillOpacity: 0.75, weight: 0 }}>
+              pathOptions={{ color: CAT_COLOR[z.category] ?? "#607d8b", fillOpacity: 0.8, weight: 0 }}>
               <Popup>
-                <b>{z.zone_name||"Assessment Zone"}</b><br />
+                <b>{z.zone_name || "Assessment Zone"}</b><br />
                 Score: <b>{z.health_score}</b><br />
-                <span style={{color:CAT_COLOR[z.category]}}>{z.category}</span><br />
+                <span style={{ color: CAT_COLOR[z.category] }}>{z.category}</span><br />
                 {new Date(z.createdAt).toLocaleString()}
               </Popup>
             </CircleMarker>
@@ -422,25 +427,28 @@ export default function EcosystemHealth() {
         </MapContainer>
       </div>
 
-      {/* History */}
-      <div className="eco-history-section">
+      {/* ── History ── */}
+      <div className="eco-history-section" style={{ marginTop: "1.25rem" }}>
         <button className="btn-toggle" onClick={toggleHistory}>
           {showHist ? "▲ Hide History" : "▼ Show Assessment History"}
         </button>
+
         {showHist && (
-          <div className="eco-card" style={{ marginTop: "1rem" }}>
+          <div className="eco-card" style={{ marginTop: "0.75rem" }}>
             <div className="history-header">
               <h3>Assessment History ({history.length})</h3>
               {history.length > 0 &&
                 <button className="btn-export" onClick={exportCSV}>⬇ Export CSV</button>}
             </div>
+
             {history.length > 1 && (
               <div style={{ marginBottom: "1.5rem" }}>
                 <canvas ref={trendRef} />
               </div>
             )}
+
             {history.length === 0
-              ? <p style={{ color:"#607d8b", textAlign:"center", padding:"2rem" }}>No assessments yet.</p>
+              ? <p style={{ color: "var(--text-muted)", textAlign: "center", padding: "2rem" }}>No assessments yet.</p>
               : <div className="eco-table-scroll">
                   <table className="eco-table">
                     <thead>
@@ -450,22 +458,21 @@ export default function EcosystemHealth() {
                       </tr>
                     </thead>
                     <tbody>
-                      {history.map((r,i) => (
+                      {history.map((r, i) => (
                         <tr key={r._id}>
-                          <td>{i+1}</td>
+                          <td>{i + 1}</td>
                           <td>{new Date(r.createdAt).toLocaleString()}</td>
-                          <td><strong>{r.health_score}</strong></td>
-                          <td><span className="badge"
-                            style={{background:CAT_COLOR[r.category]}}>{r.category}</span></td>
-                          <td>{r.parameters?.temperature??"-"}</td>
-                          <td>{r.parameters?.dissolved_o2??"-"}</td>
-                          <td>{r.parameters?.chlorophyll??"-"}</td>
-                          <td>{r.parameters?.ph??"-"}</td>
+                          <td><strong style={{ color: "var(--text-primary)" }}>{r.health_score}</strong></td>
+                          <td><span className="badge" style={{ background: CAT_COLOR[r.category] }}>{r.category}</span></td>
+                          <td>{r.parameters?.temperature ?? "—"}</td>
+                          <td>{r.parameters?.dissolved_o2 ?? "—"}</td>
+                          <td>{r.parameters?.chlorophyll ?? "—"}</td>
+                          <td>{r.parameters?.ph ?? "—"}</td>
                           <td>
                             <button className="btn-delete"
-                              onClick={()=>handleDelete(r._id)}
-                              disabled={deleting===r._id}>
-                              {deleting===r._id?"…":"✕"}
+                              onClick={() => handleDelete(r._id)}
+                              disabled={deleting === r._id}>
+                              {deleting === r._id ? "…" : "✕"}
                             </button>
                           </td>
                         </tr>

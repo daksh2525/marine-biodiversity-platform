@@ -441,9 +441,7 @@ export default function Home() {
     );
 
   return (
-    /* ─── FIX: outer wrapper sirf bg/color, height control nahi karta ─── */
-    <div className="bg-[#070d1a] text-slate-100">
-
+    <div className="min-h-screen bg-[#070d1a] text-slate-100">
       {/* ── Mobile backdrop ── */}
       {drawerOpen && (
         <div
@@ -499,26 +497,17 @@ export default function Home() {
         </div>
       </div>
 
-      {/* ── Page layout ──
-          FIX: flex row, sidebar sticky, main scrolls independently.
-          No h-screen on this wrapper — content determines height.
-      ── */}
-      <div className="flex relative">
-
+      {/* ── Page layout ── */}
+     <div className="flex h-screen overflow-hidden">
         {/* ════════ SIDEBAR ════════
-            Desktop: sticky so it stays in view while main scrolls.
-                     Width is fixed, flex-shrink-0 so it never squishes.
-            Mobile:  fixed overlay (z-40), slides in/out.
-                     NOT in flex flow on mobile → never pushes/overlaps main.
-        ════════════════════════════ */}
+            Desktop: sticky in flex flow — pushes main content naturally.
+            Mobile:  fixed overlay — does NOT affect main content width.
+        ══════════════════════════ */}
         <aside
           className={[
-            /* always */
             "z-40 bg-[#0a1628] border-r border-slate-800/60 flex flex-col",
-            /* desktop — in-flow, sticky */
-            "lg:sticky lg:top-0 lg:self-start lg:h-screen lg:flex-shrink-0 lg:w-[300px] xl:w-[340px]",
-            /* mobile — fixed overlay, out of flow */
-            "fixed top-0 left-0 h-full w-[285px] lg:relative",
+            "lg:sticky lg:top-0 lg:h-screen lg:flex-shrink-0 lg:w-[300px] xl:w-[340px]",
+            "fixed top-0 left-0 h-full w-[285px]", // ← removed duplicate lg:static/lg:w here
             /* slide */
             "transition-transform duration-300 ease-in-out",
             drawerOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0",
@@ -634,7 +623,7 @@ export default function Home() {
               ))}
             </div>
 
-            {/* Predict button + error + result */}
+            {/* ── Predict button + error + result — all below Depth slider ── */}
             <div className="space-y-3 pt-1 pb-6">
               <button
                 onClick={() => runPredict(values, null, null)}
@@ -675,14 +664,13 @@ export default function Home() {
         </aside>
 
         {/* ════════ MAIN CONTENT ════════
-            flex-1 → fills remaining width next to sidebar.
-            min-w-0 → prevents flex overflow.
-            No overflow-y-auto here — page scrolls naturally.
-        ════════════════════════════════ */}
-        <main className="flex-1 min-w-0 flex flex-col">
-
+            On desktop: flex-1, naturally starts AFTER sidebar.
+            On mobile:  full width (sidebar is overlay, not in flex flow).
+            KEY: no negative margins, no absolute trickery.
+        ══════════════════════════════ */}
+       <main className="flex-1 min-w-0 flex flex-col overflow-y-auto">
           {/* MAP */}
-          <section className="p-3 sm:p-4 lg:p-6 pb-3">
+          <section className="p-3 sm:p-4 lg:p-6 pb-3 ">
             <div className="bg-[#0a1628] border border-slate-800/60 rounded-2xl overflow-hidden">
               {/* Map header */}
               <div className="px-4 lg:px-5 py-3 border-b border-slate-800/60 flex flex-wrap items-center justify-between gap-2">
@@ -706,8 +694,16 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* Leaflet map */}
-              <div style={{ height: "420px", width: "100%" }}>
+              {/* Leaflet map
+                  Desktop: 420px fixed.
+                  Mobile: 55vw (scales nicely on small screens, minimum 240px).
+              */}
+              <div
+                style={{
+                  height: "max(240px, min(420px, 55vw))",
+                  width: "100%",
+                }}
+              >
                 <MapContainer
                   center={mapCenter}
                   zoom={mapZoom}
@@ -724,8 +720,10 @@ export default function Home() {
                       center={[zoneMarker.lat, zoneMarker.lng]}
                       radius={16}
                       pathOptions={{
-                        color: ZONE_HEALTH_COLOR[zoneMarker.health] ?? "#06b6d4",
-                        fillColor: ZONE_HEALTH_COLOR[zoneMarker.health] ?? "#06b6d4",
+                        color:
+                          ZONE_HEALTH_COLOR[zoneMarker.health] ?? "#06b6d4",
+                        fillColor:
+                          ZONE_HEALTH_COLOR[zoneMarker.health] ?? "#06b6d4",
                         fillOpacity: 0.25,
                         weight: 2,
                       }}
@@ -810,8 +808,8 @@ export default function Home() {
             </section>
           )}
 
-          {/* CHARTS — pb-8 ensures space above footer */}
-          <section className="p-3 sm:p-4 lg:p-6 pt-3 pb-8">
+          {/* CHARTS */}
+          <section className="p-3 sm:p-4 lg:p-6 pt-3 pb-6">
             {histLoading ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {[1, 2].map((i) => (
@@ -848,7 +846,6 @@ export default function Home() {
               </div>
             )}
           </section>
-
         </main>
       </div>
     </div>
