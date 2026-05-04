@@ -1,167 +1,71 @@
 import { useState, useEffect, useRef } from "react";
 import {
-  MapContainer,
-  TileLayer,
-  CircleMarker,
-  Popup,
-  useMap,
+  MapContainer, TileLayer, CircleMarker, Popup, useMap,
 } from "react-leaflet";
 import toast from "react-hot-toast";
-import {
-  TempAbundanceChart,
-  MonthlyDistributionChart,
-} from "../components/Charts";
+import { TempAbundanceChart, MonthlyDistributionChart } from "../components/Charts";
 import { predictFish, getHistory } from "../services/api";
 import { useAuth } from "../context/AuthContext";
-import {
-  TooltipIcon,
-  SkeletonCard,
-  EmptyState,
-  AnimatedNumber,
-  abundanceBorder,
-} from "../components/UI";
+import { TooltipIcon, SkeletonCard, EmptyState, AnimatedNumber, abundanceBorder } from "../components/UI";
 import INDIAN_OCEAN_ZONES, { ZONE_HEALTH_COLOR } from "../data/oceanZones";
 import "leaflet/dist/leaflet.css";
 
-/* ── helpers ── */
 function MapController({ center, zoom }) {
   const map = useMap();
-  useEffect(() => {
-    if (center) map.flyTo(center, zoom, { animate: true, duration: 1.5 });
-  }, [center, zoom]);
+  useEffect(() => { if (center) map.flyTo(center, zoom, { animate: true, duration: 1.5 }); }, [center, zoom]);
   return null;
 }
 
 const PARAM_TOOLTIPS = {
   temperature: "Temperature of ocean surface water in Celsius",
-  salinity: "Amount of dissolved salts in seawater (PSU)",
-  oxygen: "Oxygen dissolved in water (mg/L). Fish need > 5 mg/L",
+  salinity:    "Amount of dissolved salts in seawater (PSU)",
+  oxygen:      "Oxygen dissolved in water (mg/L). Fish need > 5 mg/L",
   chlorophyll: "Phytoplankton measure — more = more fish food (mg/m³)",
-  month: "Current month affects fish migration patterns",
-  depth: "Water depth in meters where fish are found",
+  month:       "Current month affects fish migration patterns",
+  depth:       "Water depth in meters where fish are found",
 };
 
 const PARAMS = [
-  {
-    key: "temperature",
-    label: "Sea Surface Temp",
-    unit: "°C",
-    min: 0,
-    max: 40,
-    step: 0.1,
-    default: 27,
-    icon: "🌡️",
-  },
-  {
-    key: "salinity",
-    label: "Salinity",
-    unit: "PSU",
-    min: 0,
-    max: 45,
-    step: 0.1,
-    default: 33,
-    icon: "🧂",
-  },
-  {
-    key: "oxygen",
-    label: "Dissolved Oxygen",
-    unit: "mg/L",
-    min: 0,
-    max: 15,
-    step: 0.1,
-    default: 6,
-    icon: "💧",
-  },
-  {
-    key: "chlorophyll",
-    label: "Chlorophyll-a",
-    unit: "mg/m³",
-    min: 0,
-    max: 20,
-    step: 0.01,
-    default: 1.5,
-    icon: "🌿",
-  },
-  {
-    key: "month",
-    label: "Month",
-    unit: "",
-    min: 1,
-    max: 12,
-    step: 1,
-    default: 6,
-    icon: "📅",
-  },
-  {
-    key: "depth",
-    label: "Depth",
-    unit: "m",
-    min: 1,
-    max: 1000,
-    step: 1,
-    default: 100,
-    icon: "⚓",
-  },
+  { key: "temperature", label: "Sea Surface Temp", unit: "°C",    min: 0, max: 40,   step: 0.1,  default: 27,  icon: "🌡️" },
+  { key: "salinity",    label: "Salinity",          unit: "PSU",   min: 0, max: 45,   step: 0.1,  default: 33,  icon: "🧂" },
+  { key: "oxygen",      label: "Dissolved Oxygen",  unit: "mg/L",  min: 0, max: 15,   step: 0.1,  default: 6,   icon: "💧" },
+  { key: "chlorophyll", label: "Chlorophyll-a",     unit: "mg/m³", min: 0, max: 20,   step: 0.01, default: 1.5, icon: "🌿" },
+  { key: "month",       label: "Month",             unit: "",      min: 1, max: 12,   step: 1,    default: 6,   icon: "📅" },
+  { key: "depth",       label: "Depth",             unit: "m",     min: 1, max: 1000, step: 1,    default: 100, icon: "⚓" },
 ];
 
-const MONTH_NAMES = [
-  "",
-  "Jan",
-  "Feb",
-  "Mar",
-  "Apr",
-  "May",
-  "Jun",
-  "Jul",
-  "Aug",
-  "Sep",
-  "Oct",
-  "Nov",
-  "Dec",
-];
-const CAT_COLOR = { High: "#22c55e", Medium: "#f59e0b", Low: "#ef4444" };
-const CAT_BADGE = {
-  High: "bg-green-500/10 text-green-400 border border-green-500/30",
-  Medium: "bg-amber-500/10 text-amber-400 border border-amber-500/30",
-  Low: "bg-red-500/10   text-red-400   border border-red-500/30",
-};
-const CAT_DOT = {
-  High: "bg-green-400",
-  Medium: "bg-amber-400",
-  Low: "bg-red-400",
-};
+const MONTH_NAMES = ["","Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const CAT_COLOR  = { High: "#22c55e", Medium: "#f59e0b", Low: "#ef4444" };
+const CAT_BG     = { High: "rgba(34,197,94,0.08)",  Medium: "rgba(245,158,11,0.08)",  Low: "rgba(239,68,68,0.08)" };
+const CAT_BORDER = { High: "rgba(34,197,94,0.25)",  Medium: "rgba(245,158,11,0.25)",  Low: "rgba(239,68,68,0.25)" };
+const CAT_DOT    = { High: "#22c55e", Medium: "#f59e0b", Low: "#ef4444" };
 
 /* ── SliderRow ── */
 function SliderRow({ p, value, onChange }) {
   const pct = ((value - p.min) / (p.max - p.min)) * 100;
   return (
-    <div>
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-1.5 min-w-0">
-          <span className="text-sm leading-none flex-shrink-0">{p.icon}</span>
-          <span className="text-xs text-slate-400 truncate">{p.label}</span>
+    <div style={{ marginBottom: "1rem" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.4rem" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", minWidth: 0 }}>
+          <span style={{ fontSize: "0.85rem", flexShrink: 0 }}>{p.icon}</span>
+          <span style={{ fontSize: "0.75rem", color: "#8fb4cc", fontWeight: 500, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.label}</span>
           <TooltipIcon text={PARAM_TOOLTIPS[p.key]} />
         </div>
-        <span className="font-mono text-xs font-medium text-cyan-400 bg-cyan-950/70 border border-cyan-900/50 px-2 py-0.5 rounded-md ml-2 flex-shrink-0 tabular-nums">
-          {p.key === "month" ? MONTH_NAMES[value] : value}
-          {p.unit}
+        <span style={{ fontFamily: "monospace", fontSize: "0.7rem", fontWeight: 600, color: "#06b6d4",
+          background: "rgba(6,182,212,0.1)", border: "1px solid rgba(6,182,212,0.2)",
+          padding: "0.12rem 0.45rem", borderRadius: "6px", flexShrink: 0, marginLeft: "0.5rem" }}>
+          {p.key === "month" ? MONTH_NAMES[value] : value}{p.unit}
         </span>
       </div>
-      <input
-        type="range"
-        min={p.min}
-        max={p.max}
-        step={p.step}
-        value={value}
+      <input type="range" min={p.min} max={p.max} step={p.step} value={value}
         onChange={(e) => onChange(Number(e.target.value))}
-        className="w-full h-1.5 rounded-full appearance-none cursor-pointer accent-cyan-500"
-        style={{
-          background: `linear-gradient(to right, #06b6d4 ${pct}%, #1e2d42 ${pct}%)`,
-        }}
-      />
-      <div className="flex justify-between mt-1">
-        <span className="text-[9px] text-slate-700">{p.min}</span>
-        <span className="text-[9px] text-slate-700">{p.max}</span>
+        className="h-predict-slider"
+        style={{ width: "100%", height: "4px", borderRadius: "4px", appearance: "none",
+          outline: "none", cursor: "pointer",
+          background: `linear-gradient(to right, #06b6d4 ${pct}%, #1a3347 ${pct}%)` }} />
+      <div style={{ display: "flex", justifyContent: "space-between", marginTop: "0.2rem" }}>
+        <span style={{ fontSize: "0.58rem", color: "#2a4a62" }}>{p.min}</span>
+        <span style={{ fontSize: "0.58rem", color: "#2a4a62" }}>{p.max}</span>
       </div>
     </div>
   );
@@ -170,51 +74,33 @@ function SliderRow({ p, value, onChange }) {
 /* ── ResultCard ── */
 function ResultCard({ result, compact = false }) {
   if (!result) return null;
+  const c = result.category;
   return (
-    <div
-      className={`bg-slate-800/50 border border-slate-700/50 rounded-xl overflow-hidden ${
-        compact ? "" : "mt-2"
-      }`}
-    >
-      <div className="px-4 py-3 border-b border-slate-700/40 flex items-center justify-between">
-        <span className="text-[9px] font-semibold tracking-[2px] uppercase text-slate-500">
-          Result
-        </span>
-        <span
-          className={`text-[10px] font-semibold px-2.5 py-1 rounded-full ${
-            CAT_BADGE[result.category]
-          }`}
-        >
-          {result.category} Abundance
-        </span>
+    <div style={{ background: CAT_BG[c], border: `1px solid ${CAT_BORDER[c]}`,
+      borderRadius: "14px", overflow: "hidden", marginTop: compact ? 0 : "0.5rem" }}>
+      <div style={{ padding: "0.55rem 1rem", borderBottom: `1px solid ${CAT_BORDER[c]}`,
+        display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <span style={{ fontSize: "0.58rem", fontWeight: 700, letterSpacing: "0.14em",
+          textTransform: "uppercase", color: "#4a6a82" }}>Result</span>
+        <span style={{ fontSize: "0.62rem", fontWeight: 700, padding: "0.18rem 0.6rem",
+          borderRadius: "999px", background: CAT_BG[c], border: `1px solid ${CAT_BORDER[c]}`,
+          color: CAT_COLOR[c] }}>{c} Abundance</span>
       </div>
-      <div className="px-4 py-3 space-y-3">
-        <div className="flex items-baseline gap-1.5">
-          <span
-            className={`font-semibold tabular-nums text-slate-100 ${
-              compact ? "text-2xl" : "text-3xl"
-            }`}
-          >
+      <div style={{ padding: "0.75rem 1rem" }}>
+        <div style={{ display: "flex", alignItems: "baseline", gap: "0.4rem", marginBottom: "0.65rem" }}>
+          <span style={{ fontSize: compact ? "1.7rem" : "2rem", fontWeight: 800, color: "#e8f4f8",
+            fontFamily: "monospace", letterSpacing: "-0.02em" }}>
             <AnimatedNumber value={result.fish_abundance_kg_km2} decimals={2} />
           </span>
-          <span className="text-xs text-slate-500">kg / km²</span>
+          <span style={{ fontSize: "0.7rem", color: "#4a6a82" }}>kg / km²</span>
         </div>
-        <div className="grid grid-cols-3 gap-1.5">
-          {[
-            ["RF", result.rf_prediction],
-            ["XGB", result.xgb_prediction],
-            ["Ensemble", result.fish_abundance_kg_km2],
-          ].map(([label, val]) => (
-            <div
-              key={label}
-              className="bg-slate-900/60 rounded-lg px-2 py-2 text-center"
-            >
-              <p className="text-[8px] text-slate-500 uppercase tracking-wider mb-0.5">
-                {label}
-              </p>
-              <p className="font-mono text-[10px] font-medium text-slate-300">
-                {val}
-              </p>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0.35rem" }}>
+          {[["RF", result.rf_prediction], ["XGB", result.xgb_prediction], ["Ensemble", result.fish_abundance_kg_km2]].map(([label, val]) => (
+            <div key={label} style={{ background: "rgba(0,0,0,0.2)", borderRadius: "8px",
+              padding: "0.4rem 0.35rem", textAlign: "center" }}>
+              <p style={{ fontSize: "0.52rem", color: "#4a6a82", textTransform: "uppercase",
+                letterSpacing: "0.08em", marginBottom: "0.2rem" }}>{label}</p>
+              <p style={{ fontFamily: "monospace", fontSize: "0.68rem", fontWeight: 600, color: "#8fb4cc" }}>{val}</p>
             </div>
           ))}
         </div>
@@ -223,104 +109,84 @@ function ResultCard({ result, compact = false }) {
   );
 }
 
-/* ── Fisherman view ── */
+/* ── FishermanView ── */
 function FishermanView({ selectedZone, onZoneSelect, result, loading, error }) {
   const zone = selectedZone ? INDIAN_OCEAN_ZONES[selectedZone] : null;
+  const c = result?.category;
   return (
-    <div className="min-h-screen bg-[#070d1a] flex flex-col items-center justify-center p-4">
-      <div className="w-full max-w-sm space-y-4">
-        <div className="text-center mb-6">
-          <span className="inline-block text-[10px] tracking-[3px] uppercase text-cyan-500/60 bg-cyan-500/5 border border-cyan-500/10 rounded-full px-3 py-1 mb-3">
-            Fishing Assistant
-          </span>
-          <h1 className="text-2xl font-semibold text-slate-100">
+    <div style={{ minHeight: "100vh", background: "#050e1d", display: "flex",
+      flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "1rem" }}>
+      <div style={{ width: "100%", maxWidth: "360px" }}>
+        <div style={{ textAlign: "center", marginBottom: "1.5rem" }}>
+          <span style={{ display: "inline-block", fontSize: "0.62rem", letterSpacing: "0.2em",
+            textTransform: "uppercase", color: "rgba(6,182,212,0.6)", background: "rgba(6,182,212,0.06)",
+            border: "1px solid rgba(6,182,212,0.12)", borderRadius: "999px",
+            padding: "0.28rem 0.85rem", marginBottom: "0.65rem" }}>Fishing Assistant</span>
+          <h1 style={{ fontSize: "1.5rem", fontWeight: 700, color: "#e8f4f8", letterSpacing: "-0.02em" }}>
             Select Your Zone
           </h1>
         </div>
-        <div className="bg-[#0d1b2e] border border-slate-700/50 rounded-2xl p-5 space-y-3">
-          <p className="text-[10px] font-semibold tracking-[2px] uppercase text-slate-500">
-            Indian Ocean Zones
-          </p>
-          <div className="relative">
-            <select
-              className="w-full bg-slate-800/80 border border-slate-700/60 rounded-xl px-4 py-3 text-slate-200 text-sm focus:outline-none focus:border-cyan-500/50 transition-all cursor-pointer appearance-none pr-9"
-              value={selectedZone}
-              onChange={(e) => onZoneSelect(e.target.value)}
-            >
+        <div style={{ background: "#0d1f35", border: "1px solid rgba(255,255,255,0.07)",
+          borderRadius: "18px", padding: "1.25rem", marginBottom: "0.75rem" }}>
+          <p style={{ fontSize: "0.6rem", fontWeight: 700, letterSpacing: "0.14em",
+            textTransform: "uppercase", color: "#4a6a82", marginBottom: "0.6rem" }}>Indian Ocean Zones</p>
+          <div style={{ position: "relative" }}>
+            <select style={{ width: "100%", background: "rgba(0,0,0,0.3)",
+              border: "1.5px solid rgba(6,182,212,0.28)", borderRadius: "12px",
+              padding: "0.68rem 2rem 0.68rem 0.9rem", color: "#e8f4f8",
+              fontSize: "0.85rem", appearance: "none", cursor: "pointer", outline: "none" }}
+              value={selectedZone} onChange={(e) => onZoneSelect(e.target.value)}>
               <option value="">Choose a fishing zone…</option>
-              {Object.keys(INDIAN_OCEAN_ZONES).map((k) => (
-                <option key={k} value={k}>
-                  {k}
-                </option>
-              ))}
+              {Object.keys(INDIAN_OCEAN_ZONES).map((k) => (<option key={k} value={k}>{k}</option>))}
             </select>
-            <svg
-              className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M19 9l-7 7-7-7"
-              />
+            <svg style={{ position: "absolute", right: "0.75rem", top: "50%", transform: "translateY(-50%)",
+              width: 14, height: 14, color: "#06b6d4", pointerEvents: "none" }}
+              fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
             </svg>
           </div>
-          {zone && (
-            <p className="text-xs text-slate-500 leading-relaxed">
-              📍 {zone.description}
-            </p>
-          )}
+          {zone && <p style={{ fontSize: "0.72rem", color: "#4a6a82", marginTop: "0.6rem",
+            lineHeight: 1.5, borderLeft: "2px solid rgba(6,182,212,0.2)", paddingLeft: "0.5rem" }}>
+            📍 {zone.description}</p>}
         </div>
         {loading && (
-          <div className="bg-[#0d1b2e] border border-slate-700/50 rounded-2xl p-8 flex flex-col items-center gap-3">
-            <div className="w-8 h-8 border-2 border-cyan-500/20 border-t-cyan-500 rounded-full animate-spin" />
-            <p className="text-sm text-slate-500">Analysing zone…</p>
+          <div style={{ background: "#0d1f35", border: "1px solid rgba(255,255,255,0.07)",
+            borderRadius: "18px", padding: "2.5rem 1rem", textAlign: "center" }}>
+            <div style={{ width: 32, height: 32, border: "2px solid rgba(6,182,212,0.15)",
+              borderTopColor: "#06b6d4", borderRadius: "50%", animation: "spin .75s linear infinite",
+              margin: "0 auto 0.75rem" }} />
+            <p style={{ fontSize: "0.82rem", color: "#4a6a82" }}>Analysing zone…</p>
           </div>
         )}
         {result && !loading && (
-          <div className="bg-[#0d1b2e] border border-slate-700/50 rounded-2xl p-5 space-y-4">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] font-semibold tracking-[2px] uppercase text-slate-500">
-                Prediction
-              </span>
-              <span
-                className={`text-xs font-medium px-3 py-1 rounded-full ${
-                  CAT_BADGE[result.category]
-                }`}
-              >
-                {result.category}
-              </span>
+          <div style={{ background: "#0d1f35", border: `1px solid ${CAT_BORDER[c]}`,
+            borderRadius: "18px", padding: "1.25rem" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.75rem" }}>
+              <span style={{ fontSize: "0.6rem", fontWeight: 700, letterSpacing: "0.14em",
+                textTransform: "uppercase", color: "#4a6a82" }}>Prediction</span>
+              <span style={{ fontSize: "0.68rem", fontWeight: 700, padding: "0.2rem 0.6rem",
+                borderRadius: "999px", background: CAT_BG[c], border: `1px solid ${CAT_BORDER[c]}`,
+                color: CAT_COLOR[c] }}>{c}</span>
             </div>
-            <div className="flex items-baseline gap-2">
-              <span className="text-4xl font-semibold text-slate-100 tabular-nums">
-                <AnimatedNumber
-                  value={result.fish_abundance_kg_km2}
-                  decimals={2}
-                />
+            <div style={{ display: "flex", alignItems: "baseline", gap: "0.4rem", marginBottom: "0.85rem" }}>
+              <span style={{ fontSize: "2.2rem", fontWeight: 800, color: "#e8f4f8",
+                fontFamily: "monospace", letterSpacing: "-0.03em" }}>
+                <AnimatedNumber value={result.fish_abundance_kg_km2} decimals={2} />
               </span>
-              <span className="text-sm text-slate-500">kg/km²</span>
+              <span style={{ fontSize: "0.8rem", color: "#4a6a82" }}>kg/km²</span>
             </div>
-            <div
-              className={`rounded-xl p-4 text-sm leading-relaxed ${
-                result.category === "High"
-                  ? "bg-green-500/5 border border-green-500/20 text-green-300"
-                  : result.category === "Medium"
-                  ? "bg-amber-500/5 border border-amber-500/20 text-amber-300"
-                  : "bg-red-500/5 border border-red-500/20 text-red-300"
-              }`}
-            >
-              {result.category === "High" && "✅ Good — go 15–20 km offshore"}
-              {result.category === "Medium" &&
-                "⚠️ Moderate — check weather first"}
-              {result.category === "Low" && "❌ Poor — try another zone"}
+            <div style={{ background: CAT_BG[c], border: `1px solid ${CAT_BORDER[c]}`,
+              borderRadius: "10px", padding: "0.75rem", fontSize: "0.82rem",
+              color: CAT_COLOR[c], lineHeight: 1.5 }}>
+              {c === "High"   && "✅ Good — go 15–20 km offshore"}
+              {c === "Medium" && "⚠️ Moderate — check weather first"}
+              {c === "Low"    && "❌ Poor — try another zone"}
             </div>
           </div>
         )}
         {error && (
-          <div className="bg-red-950/40 border border-red-800/50 rounded-2xl p-4 text-sm text-red-400">
+          <div style={{ background: "rgba(239,68,68,0.07)", border: "1px solid rgba(239,68,68,0.22)",
+            borderRadius: "14px", padding: "0.85rem", fontSize: "0.8rem", color: "#fca5a5", marginTop: "0.75rem" }}>
             ⚠️ {error}
           </div>
         )}
@@ -329,528 +195,399 @@ function FishermanView({ selectedZone, onZoneSelect, result, loading, error }) {
   );
 }
 
-/* ─────────────────────── Main export ────────────────────────────────────── */
+/* ─────────────────────── Main ── */
 export default function Home() {
   const { user } = useAuth();
   const isFisherman = user?.role === "fisherman";
 
-  const [values, setValues] = useState(
-    Object.fromEntries(PARAMS.map((p) => [p.key, p.default]))
-  );
-  const [result, setResult] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [history, setHistory] = useState([]);
+  const [values,      setValues]      = useState(Object.fromEntries(PARAMS.map((p) => [p.key, p.default])));
+  const [result,      setResult]      = useState(null);
+  const [loading,     setLoading]     = useState(false);
+  const [error,       setError]       = useState("");
+  const [history,     setHistory]     = useState([]);
   const [histLoading, setHistLoading] = useState(false);
-  const [mapCenter, setMapCenter] = useState([10, 76]);
-  const [mapZoom, setMapZoom] = useState(5);
+  const [mapCenter,   setMapCenter]   = useState([10, 76]);
+  const [mapZoom,     setMapZoom]     = useState(5);
   const [inputLatLng, setInputLatLng] = useState(null);
-  const [selZone, setSelZone] = useState("");
-  const [zoneLoaded, setZoneLoaded] = useState(false);
-  const [zoneMarker, setZoneMarker] = useState(null);
-  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [selZone,     setSelZone]     = useState("");
+  const [zoneLoaded,  setZoneLoaded]  = useState(false);
+  const [zoneMarker,  setZoneMarker]  = useState(null);
+  const [drawerOpen,  setDrawerOpen]  = useState(false);
   const resultRef = useRef();
 
   useEffect(() => {
     setHistLoading(true);
-    getHistory()
-      .then(setHistory)
-      .catch(() => {})
-      .finally(() => setHistLoading(false));
+    getHistory().then(setHistory).catch(() => {}).finally(() => setHistLoading(false));
   }, [result]);
 
   useEffect(() => {
-    if (result)
-      resultRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    if (result) resultRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   }, [result]);
 
   const handleZoneSelect = async (zoneName) => {
-    setSelZone(zoneName);
-    setZoneLoaded(false);
-    setResult(null);
-    setError("");
+    setSelZone(zoneName); setZoneLoaded(false); setResult(null); setError("");
     if (!zoneName || !INDIAN_OCEAN_ZONES[zoneName]) return;
     const z = INDIAN_OCEAN_ZONES[zoneName];
-    setValues((v) => ({
-      ...v,
-      temperature: z.temp,
-      salinity: z.salinity,
-      oxygen: z.oxygen,
-      chlorophyll: z.chlorophyll,
-      depth: z.depth,
-    }));
-    setMapCenter([z.lat, z.lng]);
-    setMapZoom(z.zoom);
-    setZoneMarker({
-      lat: z.lat,
-      lng: z.lng,
-      name: zoneName,
-      desc: z.description,
-      health: z.healthLevel,
-    });
+    setValues((v) => ({ ...v, temperature: z.temp, salinity: z.salinity,
+      oxygen: z.oxygen, chlorophyll: z.chlorophyll, depth: z.depth }));
+    setMapCenter([z.lat, z.lng]); setMapZoom(z.zoom);
+    setZoneMarker({ lat: z.lat, lng: z.lng, name: zoneName, desc: z.description, health: z.healthLevel });
     setZoneLoaded(true);
     toast.success(`${zoneName} loaded!`);
     if (isFisherman)
-      await runPredict(
-        {
-          temperature: z.temp,
-          salinity: z.salinity,
-          oxygen: z.oxygen,
-          chlorophyll: z.chlorophyll,
-          month: values.month,
-          depth: z.depth,
-        },
-        z.lat,
-        z.lng
-      );
+      await runPredict({ temperature: z.temp, salinity: z.salinity, oxygen: z.oxygen,
+        chlorophyll: z.chlorophyll, month: values.month, depth: z.depth }, z.lat, z.lng);
   };
 
   const runPredict = async (params, lat, lng) => {
-    setLoading(true);
-    setError("");
+    setLoading(true); setError("");
     try {
       const useLat = lat ?? 10 + (Math.random() - 0.5) * 14;
       const useLng = lng ?? 76 + (Math.random() - 0.5) * 20;
-      const res = await predictFish({
-        ...params,
-        latitude: useLat,
-        longitude: useLng,
-      });
-      setResult(res);
-      setInputLatLng([useLat, useLng]);
-      toast.success("Prediction complete!");
-      setDrawerOpen(false);
+      const res = await predictFish({ ...params, latitude: useLat, longitude: useLng });
+      setResult(res); setInputLatLng([useLat, useLng]);
+      toast.success("Prediction complete!"); setDrawerOpen(false);
     } catch (e) {
       const msg = e.response?.data?.error || "Prediction failed. Try again.";
-      setError(msg);
-      toast.error(msg);
-    } finally {
-      setLoading(false);
-    }
+      setError(msg); toast.error(msg);
+    } finally { setLoading(false); }
   };
 
   if (isFisherman)
-    return (
-      <FishermanView
-        selectedZone={selZone}
-        onZoneSelect={handleZoneSelect}
-        result={result}
-        loading={loading}
-        error={error}
-      />
-    );
+    return <FishermanView selectedZone={selZone} onZoneSelect={handleZoneSelect}
+      result={result} loading={loading} error={error} />;
 
   return (
-    /* ─── FIX: outer wrapper sirf bg/color, height control nahi karta ─── */
-    <div className="bg-[#070d1a] text-slate-100">
+    <>
+      <style>{`
+        .h-predict-slider::-webkit-slider-thumb {
+          -webkit-appearance: none; width: 16px; height: 16px;
+          border-radius: 50%; background: #06b6d4; border: 2px solid #091628;
+          box-shadow: 0 0 8px rgba(6,182,212,0.5); cursor: pointer;
+          transition: transform .15s, box-shadow .15s;
+        }
+        .h-predict-slider::-webkit-slider-thumb:hover {
+          transform: scale(1.25); box-shadow: 0 0 14px rgba(6,182,212,0.8);
+        }
+        @keyframes spin    { to { transform: rotate(360deg); } }
+        @keyframes fadeUp  { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+        .h-fadein { animation: fadeUp .35s ease both; }
+        /* Sidebar mobile */
+        @media (max-width: 1024px) {
+          .h-sidebar { position: fixed !important; top: 0 !important; left: 0 !important;
+            height: 100% !important; transform: translateX(-100%); z-index: 40; }
+          .h-sidebar.open { transform: translateX(0) !important; }
+          .h-close-btn { display: flex !important; }
+          .h-mobile-bar { display: flex !important; }
+        }
+        @media (max-width: 640px) {
+          .h-mobile-result { display: block !important; }
+        }
+      `}</style>
 
-      {/* ── Mobile backdrop ── */}
-      {drawerOpen && (
-        <div
-          className="fixed inset-0 bg-black/75 z-30 lg:hidden"
-          onClick={() => setDrawerOpen(false)}
-        />
-      )}
+      <div style={{ background: "#050e1d", color: "#e8f4f8", fontFamily: "'DM Sans','Segoe UI',sans-serif" }}>
 
-      {/* ── Mobile top bar ── */}
-      <div className="lg:hidden sticky top-0 z-20 bg-[#0a1628]/95 backdrop-blur-sm border-b border-slate-800/60 px-4 py-3 flex items-center justify-between">
-        <div>
-          <p className="text-[9px] tracking-[3px] uppercase text-cyan-500/60">
-            Marine Intelligence
-          </p>
-          <p className="text-sm font-semibold text-slate-100">
-            Fish Abundance Predictor
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          {result && (
-            <span
-              className={`text-[10px] font-semibold px-2 py-1 rounded-full ${
-                CAT_BADGE[result.category]
-              }`}
-            >
-              {result.fish_abundance_kg_km2} kg/km²
-            </span>
-          )}
-          <button
-            onClick={() => setDrawerOpen((d) => !d)}
-            className="bg-cyan-500/10 border border-cyan-500/25 text-cyan-400 text-xs font-medium px-3 py-2 rounded-xl hover:bg-cyan-500/20 transition-colors flex items-center gap-1.5"
-          >
-            <svg
-              className="w-3.5 h-3.5"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2.5}
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
-              />
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-              />
-            </svg>
-            Tune
-          </button>
-        </div>
-      </div>
+        {/* Backdrop */}
+        {drawerOpen && (
+          <div onClick={() => setDrawerOpen(false)}
+            style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", zIndex: 30 }} />
+        )}
 
-      {/* ── Page layout ──
-          FIX: flex row, sidebar sticky, main scrolls independently.
-          No h-screen on this wrapper — content determines height.
-      ── */}
-      <div className="flex relative">
-
-        {/* ════════ SIDEBAR ════════
-            Desktop: sticky so it stays in view while main scrolls.
-                     Width is fixed, flex-shrink-0 so it never squishes.
-            Mobile:  fixed overlay (z-40), slides in/out.
-                     NOT in flex flow on mobile → never pushes/overlaps main.
-        ════════════════════════════ */}
-        <aside
-          className={[
-            /* always */
-            "z-40 bg-[#0a1628] border-r border-slate-800/60 flex flex-col",
-            /* desktop — in-flow, sticky */
-            "lg:sticky lg:top-0 lg:self-start lg:h-screen lg:flex-shrink-0 lg:w-[300px] xl:w-[340px]",
-            /* mobile — fixed overlay, out of flow */
-            "fixed top-0 left-0 h-full w-[285px] lg:relative",
-            /* slide */
-            "transition-transform duration-300 ease-in-out",
-            drawerOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0",
-          ].join(" ")}
-        >
-          {/* Sidebar header */}
-          <div className="flex-shrink-0 px-5 py-4 border-b border-slate-800/60 flex items-center justify-between">
-            <div>
-              <p className="text-[9px] tracking-[3px] uppercase text-cyan-500/60 mb-0.5">
-                Configuration
-              </p>
-              <h2 className="text-sm font-semibold text-slate-100">
-                Ocean Parameters
-              </h2>
-            </div>
-            <button
-              onClick={() => setDrawerOpen(false)}
-              className="lg:hidden text-slate-500 hover:text-slate-300 p-1.5 rounded-lg hover:bg-slate-800 transition-colors"
-            >
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2.5}
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M6 18L18 6M6 6l12 12"
-                />
+        {/* Mobile top bar */}
+        <div className="h-mobile-bar" style={{ display: "none", position: "sticky", top: 0, zIndex: 20,
+          background: "rgba(9,22,40,0.96)", backdropFilter: "blur(12px)",
+          borderBottom: "1px solid rgba(255,255,255,0.07)", padding: "0.65rem 1rem",
+          alignItems: "center", justifyContent: "space-between" }}>
+          <div>
+            <p style={{ fontSize: "0.58rem", letterSpacing: "0.2em", textTransform: "uppercase",
+              color: "rgba(6,182,212,0.6)", marginBottom: "0.1rem" }}>Marine Intelligence</p>
+            <p style={{ fontSize: "0.85rem", fontWeight: 700, color: "#e8f4f8" }}>Fish Abundance Predictor</p>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+            {result && (
+              <span style={{ fontSize: "0.62rem", fontWeight: 700, padding: "0.18rem 0.55rem",
+                borderRadius: "999px", background: CAT_BG[result.category],
+                border: `1px solid ${CAT_BORDER[result.category]}`, color: CAT_COLOR[result.category] }}>
+                {result.fish_abundance_kg_km2} kg/km²
+              </span>
+            )}
+            <button onClick={() => setDrawerOpen((d) => !d)}
+              style={{ background: "rgba(6,182,212,0.1)", border: "1px solid rgba(6,182,212,0.25)",
+                color: "#06b6d4", fontSize: "0.72rem", fontWeight: 600, padding: "0.4rem 0.75rem",
+                borderRadius: "10px", cursor: "pointer", display: "flex", alignItems: "center", gap: "0.35rem" }}>
+              <svg style={{ width: 13, height: 13 }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round"
+                  d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
               </svg>
+              Tune
             </button>
           </div>
+        </div>
 
-          {/* Scrollable sidebar content */}
-          <div className="flex-1 overflow-y-auto px-4 py-4 space-y-5">
-            {/* Zone picker */}
-            <div className="bg-slate-800/25 border border-slate-700/30 rounded-xl p-4 space-y-3">
-              <p className="text-[9px] font-semibold tracking-[2px] uppercase text-slate-500">
-                🌊 Quick-fill Zone
-              </p>
-              <div className="relative">
-                <select
-                  className="w-full bg-slate-900/80 border border-slate-700/50 hover:border-cyan-500/40 focus:border-cyan-500/60 focus:ring-2 focus:ring-cyan-500/10 rounded-xl px-3.5 py-2.5 text-slate-200 text-sm transition-all cursor-pointer appearance-none pr-8 outline-none"
-                  value={selZone}
-                  onChange={(e) => handleZoneSelect(e.target.value)}
-                >
-                  <option value="" disabled>
-                    Select a zone…
-                  </option>
-                  {Object.keys(INDIAN_OCEAN_ZONES).map((k) => (
-                    <option key={k} value={k}>
-                      {k}
-                    </option>
-                  ))}
-                </select>
-                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                  <svg
-                    className="w-3.5 h-3.5 text-cyan-500/60"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth={2.5}
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M19 9l-7 7-7-7"
-                    />
+        <div style={{ display: "flex", position: "relative" }}>
+
+          {/* ══ SIDEBAR ══ */}
+          <aside className={`h-sidebar ${drawerOpen ? "open" : ""}`}
+            style={{ background: "#091628", borderRight: "1px solid rgba(255,255,255,0.07)",
+              display: "flex", flexDirection: "column", width: 300, flexShrink: 0,
+              position: "sticky", top: 0, height: "100vh",
+              transition: "transform .3s cubic-bezier(.4,0,.2,1)" }}>
+
+            {/* Sidebar header */}
+            <div style={{ flexShrink: 0, padding: "1rem 1.2rem",
+              borderBottom: "1px solid rgba(255,255,255,0.07)",
+              display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <div>
+                <p style={{ fontSize: "0.56rem", letterSpacing: "0.18em", textTransform: "uppercase",
+                  color: "rgba(6,182,212,0.55)", marginBottom: "0.18rem" }}>Configuration</p>
+                <h2 style={{ fontSize: "0.9rem", fontWeight: 700, color: "#e8f4f8" }}>Ocean Parameters</h2>
+              </div>
+              <button className="h-close-btn" onClick={() => setDrawerOpen(false)}
+                style={{ display: "none", background: "none", border: "none",
+                  color: "#4a6a82", cursor: "pointer", padding: "0.25rem",
+                  alignItems: "center", justifyContent: "center" }}>
+                <svg style={{ width: 16, height: 16 }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Scrollable sidebar content */}
+            <div style={{ flex: 1, overflowY: "auto", padding: "1rem 1.1rem" }}>
+
+              {/* Zone picker */}
+              <div style={{ background: "rgba(255,255,255,0.025)", border: "1px solid rgba(255,255,255,0.07)",
+                borderRadius: "14px", padding: "0.9rem", marginBottom: "0.85rem" }}>
+                <p style={{ fontSize: "0.58rem", fontWeight: 700, letterSpacing: "0.14em",
+                  textTransform: "uppercase", color: "#06b6d4", marginBottom: "0.6rem", opacity: 0.8 }}>
+                  🌊 Quick-fill Zone
+                </p>
+                <div style={{ position: "relative" }}>
+                  <select style={{ width: "100%", background: "rgba(0,0,0,0.25)",
+                    border: "1.5px solid rgba(6,182,212,0.28)", borderRadius: "11px",
+                    padding: "0.62rem 1.9rem 0.62rem 0.85rem", color: "#e8f4f8",
+                    fontSize: "0.8rem", appearance: "none", cursor: "pointer", outline: "none" }}
+                    value={selZone} onChange={(e) => handleZoneSelect(e.target.value)}>
+                    <option value="" disabled>Select a zone…</option>
+                    {Object.keys(INDIAN_OCEAN_ZONES).map((k) => (<option key={k} value={k}>{k}</option>))}
+                  </select>
+                  <svg style={{ position: "absolute", right: "0.65rem", top: "50%", transform: "translateY(-50%)",
+                    width: 13, height: 13, color: "#06b6d4", pointerEvents: "none" }}
+                    fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
                   </svg>
                 </div>
-              </div>
-              {zoneLoaded && selZone ? (
-                <div className="rounded-lg bg-emerald-500/5 border border-emerald-500/20 px-3 py-2.5 space-y-1">
-                  <div className="flex items-center gap-1.5">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse flex-shrink-0" />
-                    <span className="text-xs text-emerald-400 font-medium">
-                      {selZone} — loaded
-                    </span>
+
+                {zoneLoaded && selZone ? (
+                  <div style={{ marginTop: "0.6rem", background: "rgba(34,197,94,0.06)",
+                    border: "1px solid rgba(34,197,94,0.2)", borderRadius: "9px", padding: "0.55rem 0.7rem" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "0.35rem", marginBottom: "0.2rem" }}>
+                      <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#4ade80",
+                        boxShadow: "0 0 5px #4ade80", flexShrink: 0, display: "inline-block" }} />
+                      <span style={{ fontSize: "0.7rem", color: "#4ade80", fontWeight: 600 }}>{selZone} — loaded</span>
+                    </div>
+                    <p style={{ fontSize: "0.65rem", color: "#4a6a82", lineHeight: 1.5 }}>
+                      {INDIAN_OCEAN_ZONES[selZone]?.description}
+                    </p>
                   </div>
-                  <p className="text-[11px] text-slate-500 leading-relaxed">
-                    {INDIAN_OCEAN_ZONES[selZone]?.description}
-                  </p>
-                </div>
-              ) : (
-                <p className="text-[11px] text-slate-600 leading-relaxed">
-                  Choose a zone to auto-fill all ocean parameters below.
-                </p>
-              )}
-            </div>
-
-            {/* Divider */}
-            <div className="flex items-center gap-2">
-              <div className="flex-1 h-px bg-slate-800" />
-              <span className="text-[9px] tracking-[2px] uppercase text-slate-600">
-                or manually
-              </span>
-              <div className="flex-1 h-px bg-slate-800" />
-            </div>
-
-            {/* Sliders */}
-            <div className="space-y-4">
-              {PARAMS.map((p) => (
-                <SliderRow
-                  key={p.key}
-                  p={p}
-                  value={values[p.key]}
-                  onChange={(v) =>
-                    setValues((prev) => ({ ...prev, [p.key]: v }))
-                  }
-                />
-              ))}
-            </div>
-
-            {/* Predict button + error + result */}
-            <div className="space-y-3 pt-1 pb-6">
-              <button
-                onClick={() => runPredict(values, null, null)}
-                disabled={loading}
-                className="w-full bg-cyan-500 hover:bg-cyan-400 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed text-slate-950 font-semibold text-sm rounded-xl py-3 px-5 transition-all duration-150 flex items-center justify-center gap-2 shadow-lg shadow-cyan-500/20"
-              >
-                {loading ? (
-                  <>
-                    <span className="w-4 h-4 border-2 border-slate-900/30 border-t-slate-900 rounded-full animate-spin" />
-                    Predicting…
-                  </>
                 ) : (
-                  <>
-                    <svg
-                      className="w-4 h-4"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      strokeWidth={2}
-                    >
-                      <circle cx="11" cy="11" r="8" />
-                      <path strokeLinecap="round" d="m21 21-4.35-4.35" />
-                    </svg>
-                    Predict Fish Abundance
-                  </>
-                )}
-              </button>
-
-              {error && (
-                <div className="bg-red-950/40 border border-red-800/40 rounded-xl px-3 py-2.5 text-xs text-red-400 leading-relaxed">
-                  ⚠️ {error}
-                </div>
-              )}
-
-              {result && <ResultCard result={result} compact />}
-            </div>
-          </div>
-        </aside>
-
-        {/* ════════ MAIN CONTENT ════════
-            flex-1 → fills remaining width next to sidebar.
-            min-w-0 → prevents flex overflow.
-            No overflow-y-auto here — page scrolls naturally.
-        ════════════════════════════════ */}
-        <main className="flex-1 min-w-0 flex flex-col">
-
-          {/* MAP */}
-          <section className="p-3 sm:p-4 lg:p-6 pb-3">
-            <div className="bg-[#0a1628] border border-slate-800/60 rounded-2xl overflow-hidden">
-              {/* Map header */}
-              <div className="px-4 lg:px-5 py-3 border-b border-slate-800/60 flex flex-wrap items-center justify-between gap-2">
-                <div>
-                  <p className="text-[9px] tracking-[3px] uppercase text-cyan-500/60 mb-0.5">
-                    Exclusive Economic Zone
+                  <p style={{ fontSize: "0.65rem", color: "#2a4a62", marginTop: "0.45rem", lineHeight: 1.5 }}>
+                    Choose a zone to auto-fill all ocean parameters below.
                   </p>
-                  <h2 className="text-sm font-semibold text-slate-200">
-                    Indian EEZ — Fish Abundance Map
-                  </h2>
-                </div>
-                <div className="flex items-center gap-3 flex-wrap">
-                  {Object.keys(CAT_DOT).map((k) => (
-                    <div key={k} className="flex items-center gap-1.5">
-                      <span
-                        className={`w-2 h-2 rounded-full flex-shrink-0 ${CAT_DOT[k]}`}
-                      />
-                      <span className="text-xs text-slate-400">{k}</span>
-                    </div>
-                  ))}
-                </div>
+                )}
               </div>
 
-              {/* Leaflet map */}
-              <div style={{ height: "420px", width: "100%" }}>
-                <MapContainer
-                  center={mapCenter}
-                  zoom={mapZoom}
-                  style={{ height: "100%", width: "100%" }}
-                  scrollWheelZoom
-                >
-                  <TileLayer
-                    url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-                    attribution='&copy; <a href="https://carto.com/">CARTO</a>'
-                  />
-                  <MapController center={mapCenter} zoom={mapZoom} />
-                  {zoneMarker && (
-                    <CircleMarker
-                      center={[zoneMarker.lat, zoneMarker.lng]}
-                      radius={16}
-                      pathOptions={{
-                        color: ZONE_HEALTH_COLOR[zoneMarker.health] ?? "#06b6d4",
-                        fillColor: ZONE_HEALTH_COLOR[zoneMarker.health] ?? "#06b6d4",
-                        fillOpacity: 0.25,
-                        weight: 2,
-                      }}
-                    >
-                      <Popup>
-                        <strong>{zoneMarker.name}</strong>
-                        <br />
-                        <span style={{ fontSize: 12, color: "#94a3b8" }}>
-                          {zoneMarker.desc}
-                        </span>
-                      </Popup>
-                    </CircleMarker>
+              {/* Divider */}
+              <div style={{ display: "flex", alignItems: "center", gap: "0.55rem", margin: "0.75rem 0" }}>
+                <div style={{ flex: 1, height: 1, background: "rgba(255,255,255,0.05)" }} />
+                <span style={{ fontSize: "0.58rem", letterSpacing: "0.14em", textTransform: "uppercase",
+                  color: "#2a4a62", fontWeight: 600 }}>or manually</span>
+                <div style={{ flex: 1, height: 1, background: "rgba(255,255,255,0.05)" }} />
+              </div>
+
+              {/* Sliders */}
+              <div>
+                {PARAMS.map((p) => (
+                  <SliderRow key={p.key} p={p} value={values[p.key]}
+                    onChange={(v) => setValues((prev) => ({ ...prev, [p.key]: v }))} />
+                ))}
+              </div>
+
+              {/* Predict button */}
+              <div style={{ paddingBottom: "1.5rem", marginTop: "0.25rem" }}>
+                <button onClick={() => runPredict(values, null, null)} disabled={loading}
+                  style={{ width: "100%", background: "#06b6d4", border: "none", borderRadius: "12px",
+                    color: "#050e1d", fontSize: "0.875rem", fontWeight: 700, padding: "0.82rem",
+                    cursor: loading ? "not-allowed" : "pointer", opacity: loading ? 0.7 : 1,
+                    display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem",
+                    boxShadow: "0 4px 20px rgba(6,182,212,0.3)", letterSpacing: "0.02em",
+                    transition: "all .15s" }}>
+                  {loading ? (
+                    <>
+                      <span style={{ width: 15, height: 15, border: "2px solid rgba(5,14,29,0.25)",
+                        borderTopColor: "#050e1d", borderRadius: "50%", animation: "spin .7s linear infinite" }} />
+                      Predicting…
+                    </>
+                  ) : (
+                    <>
+                      <svg style={{ width: 15, height: 15 }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <circle cx="11" cy="11" r="8" />
+                        <path strokeLinecap="round" d="m21 21-4.35-4.35" />
+                      </svg>
+                      Predict Fish Abundance
+                    </>
                   )}
-                  {inputLatLng && result && (
-                    <CircleMarker
-                      center={inputLatLng}
-                      radius={11}
-                      pathOptions={{
-                        color: "#fff",
-                        fillColor: CAT_COLOR[result.category],
-                        fillOpacity: 1,
-                        weight: 2,
-                      }}
-                    >
-                      <Popup>
-                        <strong>Prediction</strong>
-                        <br />
-                        {result.fish_abundance_kg_km2} kg/km²
-                      </Popup>
-                    </CircleMarker>
-                  )}
-                </MapContainer>
+                </button>
+
+                {error && (
+                  <div style={{ background: "rgba(239,68,68,0.07)", border: "1px solid rgba(239,68,68,0.2)",
+                    borderRadius: "10px", padding: "0.6rem 0.8rem", fontSize: "0.72rem",
+                    color: "#fca5a5", marginTop: "0.6rem", lineHeight: 1.5 }}>
+                    ⚠️ {error}
+                  </div>
+                )}
+
+                {result && (
+                  <div style={{ marginTop: "0.6rem" }} className="h-fadein">
+                    <ResultCard result={result} compact />
+                  </div>
+                )}
               </div>
             </div>
-          </section>
+          </aside>
 
-          {/* Mobile result card */}
-          {result && (
-            <section ref={resultRef} className="px-3 sm:px-4 pb-0 lg:hidden">
-              <div className="bg-[#0a1628] border border-slate-800/60 rounded-2xl p-4">
-                <p className="text-[9px] font-semibold tracking-[2px] uppercase text-slate-500 mb-3">
-                  Latest Prediction
-                </p>
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-baseline gap-1.5">
-                    <span className="text-3xl font-semibold tabular-nums text-slate-100">
-                      <AnimatedNumber
-                        value={result.fish_abundance_kg_km2}
-                        decimals={2}
-                      />
-                    </span>
-                    <span className="text-sm text-slate-500">kg/km²</span>
+          {/* ══ MAIN ══ */}
+          <main style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
+
+            {/* MAP */}
+            <section style={{ padding: "1.25rem 1.25rem 0.75rem" }}>
+              <div style={{ background: "#091628", border: "1px solid rgba(255,255,255,0.07)",
+                borderRadius: "18px", overflow: "hidden" }}>
+                {/* Map header */}
+                <div style={{ padding: "0.75rem 1.25rem", borderBottom: "1px solid rgba(255,255,255,0.07)",
+                  display: "flex", flexWrap: "wrap", alignItems: "center",
+                  justifyContent: "space-between", gap: "0.5rem" }}>
+                  <div>
+                    <p style={{ fontSize: "0.56rem", letterSpacing: "0.18em", textTransform: "uppercase",
+                      color: "rgba(6,182,212,0.55)", marginBottom: "0.12rem" }}>Exclusive Economic Zone</p>
+                    <h2 style={{ fontSize: "0.88rem", fontWeight: 700, color: "#e8f4f8" }}>
+                      Indian EEZ — Fish Abundance Map
+                    </h2>
                   </div>
-                  <span
-                    className={`text-xs font-semibold px-2.5 py-1 rounded-full ${
-                      CAT_BADGE[result.category]
-                    }`}
-                  >
-                    {result.category}
-                  </span>
+                  <div style={{ display: "flex", alignItems: "center", gap: "1rem", flexWrap: "wrap" }}>
+                    {Object.entries(CAT_DOT).map(([k, v]) => (
+                      <div key={k} style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
+                        <span style={{ width: 8, height: 8, borderRadius: "50%", background: v,
+                          boxShadow: `0 0 5px ${v}`, flexShrink: 0, display: "inline-block" }} />
+                        <span style={{ fontSize: "0.72rem", color: "#8fb4cc" }}>{k}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-                <div className="grid grid-cols-3 gap-2">
-                  {[
-                    ["RF", result.rf_prediction],
-                    ["XGB", result.xgb_prediction],
-                    ["Ensemble", result.fish_abundance_kg_km2],
-                  ].map(([label, val]) => (
-                    <div
-                      key={label}
-                      className="bg-slate-800/60 rounded-lg px-2 py-2 text-center"
-                    >
-                      <p className="text-[9px] text-slate-500 uppercase tracking-wider mb-0.5">
-                        {label}
-                      </p>
-                      <p className="font-mono text-[11px] font-medium text-slate-300">
-                        {val}
-                      </p>
-                    </div>
-                  ))}
+                {/* Leaflet */}
+                <div style={{ height: 420, width: "100%" }}>
+                  <MapContainer center={mapCenter} zoom={mapZoom}
+                    style={{ height: "100%", width: "100%" }} scrollWheelZoom>
+                    <TileLayer url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+                      attribution='&copy; <a href="https://carto.com/">CARTO</a>' />
+                    <MapController center={mapCenter} zoom={mapZoom} />
+                    {zoneMarker && (
+                      <CircleMarker center={[zoneMarker.lat, zoneMarker.lng]} radius={16}
+                        pathOptions={{ color: ZONE_HEALTH_COLOR[zoneMarker.health] ?? "#06b6d4",
+                          fillColor: ZONE_HEALTH_COLOR[zoneMarker.health] ?? "#06b6d4",
+                          fillOpacity: 0.25, weight: 2 }}>
+                        <Popup><strong>{zoneMarker.name}</strong><br />
+                          <span style={{ fontSize: 12, color: "#94a3b8" }}>{zoneMarker.desc}</span></Popup>
+                      </CircleMarker>
+                    )}
+                    {inputLatLng && result && (
+                      <CircleMarker center={inputLatLng} radius={11}
+                        pathOptions={{ color: "#fff", fillColor: CAT_COLOR[result.category], fillOpacity: 1, weight: 2 }}>
+                        <Popup><strong>Prediction</strong><br />{result.fish_abundance_kg_km2} kg/km²</Popup>
+                      </CircleMarker>
+                    )}
+                  </MapContainer>
                 </div>
               </div>
             </section>
-          )}
 
-          {/* CHARTS — pb-8 ensures space above footer */}
-          <section className="p-3 sm:p-4 lg:p-6 pt-3 pb-8">
-            {histLoading ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {[1, 2].map((i) => (
-                  <SkeletonCard key={i} />
-                ))}
-              </div>
-            ) : history.length === 0 ? (
-              <div className="bg-[#0a1628] border border-slate-800/60 rounded-2xl">
-                <EmptyState
-                  icon="🐟"
-                  message="No predictions yet — run your first analysis above"
-                />
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="bg-[#0a1628] border border-slate-800/60 rounded-2xl p-4 sm:p-5">
-                  <p className="text-[9px] font-semibold tracking-[2px] uppercase text-slate-500 mb-4">
-                    Temp vs Abundance
-                  </p>
-                  <TempAbundanceChart
-                    key={`t-${history.length}`}
-                    history={history}
-                  />
+            {/* Mobile result */}
+            {result && (
+              <section ref={resultRef} className="h-mobile-result" style={{ display: "none", padding: "0 1.25rem 0" }}>
+                <div style={{ background: "#091628", border: "1px solid rgba(255,255,255,0.07)",
+                  borderRadius: "16px", padding: "1rem" }} className="h-fadein">
+                  <p style={{ fontSize: "0.56rem", fontWeight: 700, letterSpacing: "0.14em",
+                    textTransform: "uppercase", color: "#4a6a82", marginBottom: "0.7rem" }}>Latest Prediction</p>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.7rem" }}>
+                    <div style={{ display: "flex", alignItems: "baseline", gap: "0.35rem" }}>
+                      <span style={{ fontSize: "1.8rem", fontWeight: 800, fontFamily: "monospace",
+                        color: "#e8f4f8", letterSpacing: "-0.02em" }}>
+                        <AnimatedNumber value={result.fish_abundance_kg_km2} decimals={2} />
+                      </span>
+                      <span style={{ fontSize: "0.72rem", color: "#4a6a82" }}>kg/km²</span>
+                    </div>
+                    <span style={{ fontSize: "0.68rem", fontWeight: 700, padding: "0.2rem 0.6rem",
+                      borderRadius: "999px", background: CAT_BG[result.category],
+                      border: `1px solid ${CAT_BORDER[result.category]}`, color: CAT_COLOR[result.category] }}>
+                      {result.category}
+                    </span>
+                  </div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0.4rem" }}>
+                    {[["RF", result.rf_prediction], ["XGB", result.xgb_prediction], ["Ensemble", result.fish_abundance_kg_km2]].map(([label, val]) => (
+                      <div key={label} style={{ background: "rgba(255,255,255,0.04)", borderRadius: "8px",
+                        padding: "0.4rem", textAlign: "center" }}>
+                        <p style={{ fontSize: "0.52rem", color: "#4a6a82", textTransform: "uppercase",
+                          letterSpacing: "0.08em", marginBottom: "0.18rem" }}>{label}</p>
+                        <p style={{ fontFamily: "monospace", fontSize: "0.68rem", fontWeight: 600, color: "#8fb4cc" }}>{val}</p>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-                <div className="bg-[#0a1628] border border-slate-800/60 rounded-2xl p-4 sm:p-5">
-                  <p className="text-[9px] font-semibold tracking-[2px] uppercase text-slate-500 mb-4">
-                    Monthly Distribution
-                  </p>
-                  <MonthlyDistributionChart
-                    key={`m-${history.length}`}
-                    history={history}
-                  />
-                </div>
-              </div>
+              </section>
             )}
-          </section>
 
-        </main>
+            {/* CHARTS */}
+            <section style={{ padding: "0.75rem 1.25rem 2.5rem" }}>
+              {histLoading ? (
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+                  {[1, 2].map((i) => <SkeletonCard key={i} />)}
+                </div>
+              ) : history.length === 0 ? (
+                <div style={{ background: "#091628", border: "1px solid rgba(255,255,255,0.07)", borderRadius: "18px" }}>
+                  <EmptyState icon="🐟" message="No predictions yet — run your first analysis above" />
+                </div>
+              ) : (
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(280px,1fr))", gap: "1rem" }}>
+                  {/* Chart 1 */}
+                  <div style={{ background: "#091628", border: "1px solid rgba(255,255,255,0.07)",
+                    borderRadius: "18px", padding: "1.1rem 1.2rem" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "0.45rem", marginBottom: "0.9rem" }}>
+                      <span style={{ width: 3, height: 14, background: "#06b6d4", borderRadius: "2px",
+                        display: "inline-block", boxShadow: "0 0 5px #06b6d4" }} />
+                      <p style={{ fontSize: "0.6rem", fontWeight: 700, letterSpacing: "0.14em",
+                        textTransform: "uppercase", color: "#4a6a82" }}>Temp vs Abundance</p>
+                    </div>
+                    <TempAbundanceChart key={`t-${history.length}`} history={history} />
+                  </div>
+                  {/* Chart 2 */}
+                  <div style={{ background: "#091628", border: "1px solid rgba(255,255,255,0.07)",
+                    borderRadius: "18px", padding: "1.1rem 1.2rem" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "0.45rem", marginBottom: "0.9rem" }}>
+                      <span style={{ width: 3, height: 14, background: "#22c55e", borderRadius: "2px",
+                        display: "inline-block", boxShadow: "0 0 5px #22c55e" }} />
+                      <p style={{ fontSize: "0.6rem", fontWeight: 700, letterSpacing: "0.14em",
+                        textTransform: "uppercase", color: "#4a6a82" }}>Monthly Distribution</p>
+                    </div>
+                    <MonthlyDistributionChart key={`m-${history.length}`} history={history} />
+                  </div>
+                </div>
+              )}
+            </section>
+
+          </main>
+        </div>
       </div>
-    </div>
+    </>
   );
 }
