@@ -9,26 +9,26 @@ const EXPRESS = "http://localhost:5002/api";
 const SAMPLE_SEQ = "ATGCTTGTATTTGTACTAATCCTTGCAGTCATAGCTCATACTATGCTTATTCCAACTTGCCTTGCAATAGCACATGCCATGCTAATCCCAACCTGCCTGGCAATAGCACATACCATGCTAATCCCGACC";
 
 const CONSERVATION_COLOR = {
-  "Least Concern":   "#2e7d32",
-  "Near Threatened": "#f57f17",
-  "Vulnerable":      "#e65100",
-  "Endangered":      "#c62828",
-  "Not evaluated":   "#607d8b",
+  "Least Concern":   "#16a34a",
+  "Near Threatened": "#d97706",
+  "Vulnerable":      "#ea580c",
+  "Endangered":      "#dc2626",
+  "Not evaluated":   "#4a6a82",
 };
 
 export default function EdnaMatcher() {
-  const [seq,       setSeq]       = useState("");
-  const [result,    setResult]    = useState(null);
-  const [loading,   setLoading]   = useState(false);
-  const [status,    setStatus]    = useState("");
-  const [error,     setError]     = useState("");
-  const [seqError,  setSeqError]  = useState("");
-  const [history,   setHistory]   = useState([]);
-  const [showHist,  setShowHist]  = useState(false);
-  const [filter,    setFilter]    = useState("");
-  const [deleting,  setDeleting]  = useState(null);
+  const [seq,      setSeq]      = useState("");
+  const [result,   setResult]   = useState(null);
+  const [loading,  setLoading]  = useState(false);
+  const [status,   setStatus]   = useState("");
+  const [error,    setError]    = useState("");
+  const [seqError, setSeqError] = useState("");
+  const [history,  setHistory]  = useState([]);
+  const [showHist, setShowHist] = useState(false);
+  const [filter,   setFilter]   = useState("");
+  const [deleting, setDeleting] = useState(null);
 
-  // ── Sequence validation ────────────────────────────────────────────────────
+  /* ── Validation ── */
   const validateSeq = (s) => {
     const clean = s.toUpperCase().replace(/\s/g, "");
     if (!clean) { setSeqError(""); return; }
@@ -37,8 +37,7 @@ export default function EdnaMatcher() {
       setSeqError(`Invalid characters: ${invalid.join(", ")} — Only A, T, C, G, N allowed`);
     else if (clean.length < 50)
       setSeqError(`Sequence too short (${clean.length} bp — minimum 50 bp)`);
-    else
-      setSeqError("");
+    else setSeqError("");
   };
 
   const onSeqChange = (e) => {
@@ -47,36 +46,39 @@ export default function EdnaMatcher() {
     setResult(null); setError("");
   };
 
-  // ── Stats ──────────────────────────────────────────────────────────────────
+  /* ── Live stats ── */
   const liveStats = () => {
     const clean = seq.toUpperCase().replace(/\s/g, "");
     if (!clean) return null;
-    const gc = ((clean.split("G").length - 1 + clean.split("C").length - 1) / clean.length * 100).toFixed(1);
-    const at = ((clean.split("A").length - 1 + clean.split("T").length - 1) / clean.length * 100).toFixed(1);
-    return { length: clean.length, gc, at };
+    const g = clean.split("G").length - 1;
+    const c = clean.split("C").length - 1;
+    const a = clean.split("A").length - 1;
+    const t = clean.split("T").length - 1;
+    return {
+      length: clean.length,
+      gc: ((g + c) / clean.length * 100).toFixed(1),
+      at: ((a + t) / clean.length * 100).toFixed(1),
+    };
   };
 
-  // ── Match ──────────────────────────────────────────────────────────────────
+  /* ── Match ── */
   const handleMatch = async () => {
     if (!seq.trim()) { setError("Please enter a DNA sequence."); return; }
     if (seqError)    { setError(seqError); return; }
     setLoading(true); setError(""); setResult(null);
-    setStatus("🔍 Validating sequence...");
+    setStatus("🔍 Validating sequence…");
     try {
-      setStatus("📡 Submitting to NCBI BLAST (may take 15–30s)...");
+      setStatus("📡 Submitting to NCBI BLAST (may take 15–30s)…");
       const res = await axios.post(`${EXPRESS}/match-edna`,
         { dna_sequence: seq.trim() }, { timeout: 35000 });
-      setResult(res.data);
-      setStatus("");
+      setResult(res.data); setStatus("");
     } catch (e) {
       setError(e.response?.data?.error || "Matching failed. Is Flask running?");
       setStatus("");
-    } finally {
-      setLoading(false);
-    }
+    } finally { setLoading(false); }
   };
 
-  // ── History ────────────────────────────────────────────────────────────────
+  /* ── History ── */
   const loadHistory = () =>
     axios.get(`${EXPRESS}/edna-history`).then(r => setHistory(r.data)).catch(() => {});
 
@@ -91,16 +93,14 @@ export default function EdnaMatcher() {
   };
 
   const exportCSV = () => {
-    const h    = ["Date","Species","Scientific","Match%","E-value","Method","Conservation"];
+    const h = ["Date","Species","Scientific","Match%","E-value","Method","Conservation"];
     const rows = history.map(r => [
-      new Date(r.createdAt).toLocaleString(),
-      r.species_name, r.scientific_name,
-      r.match_percentage, r.e_value ?? "N/A",
-      r.method_used, r.conservation_status,
+      new Date(r.createdAt).toLocaleString(), r.species_name, r.scientific_name,
+      r.match_percentage, r.e_value ?? "N/A", r.method_used, r.conservation_status,
     ]);
     const csv = [h, ...rows].map(r => r.join(",")).join("\n");
-    const a   = document.createElement("a");
-    a.href    = `data:text/csv;charset=utf-8,${encodeURIComponent(csv)}`;
+    const a = document.createElement("a");
+    a.href = `data:text/csv;charset=utf-8,${encodeURIComponent(csv)}`;
     a.download = "edna_history.csv"; a.click();
   };
 
@@ -110,58 +110,67 @@ export default function EdnaMatcher() {
                        || r.scientific_name?.toLowerCase().includes(filter.toLowerCase()))
     : history;
 
+  /* ── Match bar color ── */
+  const matchColor = (pct) =>
+    pct >= 90 ? "#22c55e" : pct >= 70 ? "#f59e0b" : "#ef4444";
+
   return (
     <div className="edna-page">
+
+      {/* Header */}
       <div className="edna-header">
         <h1>🧬 eDNA Species Matcher</h1>
         <p>Paste a DNA sequence from a water sample — AI matches it against NCBI GenBank and our local Indian marine fish database</p>
       </div>
 
       <div className="edna-grid">
-        {/* Input */}
-        <div className="edna-card">
-          <div className="seq-label-row">
-            <h3>DNA Sequence Input</h3>
-            <button className="btn-sample" onClick={() => { setSeq(SAMPLE_SEQ); validateSeq(SAMPLE_SEQ); setResult(null); }}>
-              Load Sample
-            </button>
-          </div>
 
-          <textarea
-            className={`seq-input ${seqError ? "invalid" : seq.length > 49 && !seqError ? "valid" : ""}`}
-            value={seq}
-            onChange={onSeqChange}
-            placeholder="Paste DNA sequence here...&#10;Example: ATGCTTGTATTTGTACTAATCC..."
-            rows={8}
-            spellCheck={false}
-          />
-
-          {seqError && <div className="seq-error">⚠️ {seqError}</div>}
-
-          {/* Live stats */}
-          {stats && !seqError && (
-            <div className="seq-stats">
-              <span>Length: <b>{stats.length} bp</b></span>
-              <span>GC: <b>{stats.gc}%</b></span>
-              <span>AT: <b>{stats.at}%</b></span>
-              <span className={stats.length >= 100 ? "good" : "warn"}>
-                {stats.length >= 100 ? "✅ Good quality" : "⚠️ Short sequence"}
-              </span>
+        {/* ══ LEFT: Input ══ */}
+        <div className="edna-input-sticky">
+          <div className="edna-card">
+            <div className="seq-label-row">
+              <h3>DNA Sequence Input</h3>
+              <button className="btn-sample"
+                onClick={() => { setSeq(SAMPLE_SEQ); validateSeq(SAMPLE_SEQ); setResult(null); }}>
+                ⚗️ Load Sample
+              </button>
             </div>
-          )}
 
-          <button className="btn-match" onClick={handleMatch}
-            disabled={loading || !!seqError || !seq.trim()}>
-            {loading
-              ? <><span className="spinner" /> {status || "Matching…"}</>
-              : "🔬 Match Species"}
-          </button>
+            <textarea
+              className={`seq-input ${seqError ? "invalid" : seq.length > 49 && !seqError ? "valid" : ""}`}
+              value={seq} onChange={onSeqChange}
+              placeholder={"Paste DNA sequence here…\nExample: ATGCTTGTATTTGTACTAATCC…"}
+              rows={9} spellCheck={false}
+            />
 
-          {!loading && status && <p className="status-msg">{status}</p>}
-          {error && <div className="edna-error">{error}</div>}
+            {seqError && <div className="seq-error">⚠️ {seqError}</div>}
+
+            {/* Live stats pills */}
+            {stats && !seqError && (
+              <div className="seq-stats">
+                <span>Length: <b>{stats.length} bp</b></span>
+                <span>GC: <b>{stats.gc}%</b></span>
+                <span>AT: <b>{stats.at}%</b></span>
+                <span className={stats.length >= 100 ? "good" : "warn"}>
+                  {stats.length >= 100 ? "✅ Good quality" : "⚠️ Short sequence"}
+                </span>
+              </div>
+            )}
+
+            <button className="btn-match" onClick={handleMatch}
+              disabled={loading || !!seqError || !seq.trim()}>
+              {loading
+                ? <><span className="spinner" /> {status || "Matching…"}</>
+                : <>🔬 Match Species</>
+              }
+            </button>
+
+            {!loading && status && <p className="status-msg">{status}</p>}
+            {error && <div className="edna-error">⚠️ {error}</div>}
+          </div>
         </div>
 
-        {/* Result */}
+        {/* ══ RIGHT: Results ══ */}
         <div>
           {!result && !loading && (
             <div className="edna-placeholder">
@@ -169,17 +178,19 @@ export default function EdnaMatcher() {
               <p>Paste a DNA sequence and click<br />"Match Species" to identify</p>
             </div>
           )}
+
           {loading && (
             <div className="edna-placeholder">
               <div className="big-spin" />
-              <p>{status || "Searching database…"}</p>
+              <p style={{ marginTop: "0.25rem" }}>{status || "Searching database…"}</p>
             </div>
           )}
 
-          {result && (
+          {result && !loading && (
             <>
               {/* Main result */}
-              <div className="edna-card result-main">
+              <div className="edna-card result-main"
+                style={{ borderLeft: `4px solid ${CONSERVATION_COLOR[result.conservation_status] || "#4a6a82"}` }}>
                 <div className="res-top">
                   <div>
                     <h2>{result.species_name}</h2>
@@ -198,21 +209,20 @@ export default function EdnaMatcher() {
                 <div className="match-bg">
                   <div className="match-fill" style={{
                     width: `${result.match_percentage}%`,
-                    background: result.match_percentage >= 90 ? "#2e7d32"
-                              : result.match_percentage >= 70 ? "#f57f17" : "#c62828",
+                    background: matchColor(result.match_percentage),
                   }} />
                 </div>
 
                 {result.e_value != null && (
                   <p className="evalue">
                     E-value: <b>{result.e_value.toExponential(2)}</b>
-                    <span className="tooltip" title="Lower = better match. Values &lt; 0.001 indicate significant similarity."> ℹ️</span>
+                    <span className="tooltip" title="Lower = better match. Values < 0.001 indicate significant similarity."> ℹ️</span>
                   </p>
                 )}
 
                 <div className="cons-row">
                   <span className="cons-badge"
-                    style={{ background: CONSERVATION_COLOR[result.conservation_status] ?? "#607d8b" }}>
+                    style={{ background: CONSERVATION_COLOR[result.conservation_status] ?? "#4a6a82" }}>
                     {result.conservation_status}
                   </span>
                 </div>
@@ -220,20 +230,19 @@ export default function EdnaMatcher() {
                 <p className="species-desc">{result.description}</p>
               </div>
 
-              {/* Sequence stats from API */}
+              {/* Sequence stats */}
               {result.sequence_stats && (
                 <div className="edna-card">
                   <h3>📊 Sequence Statistics</h3>
                   <div className="seq-stat-grid">
                     {[
-                      { label: "Length",      value: `${result.sequence_stats.length} bp` },
-                      { label: "GC Content",  value: `${result.sequence_stats.gc_content}%` },
-                      { label: "AT Content",  value: `${result.sequence_stats.at_content}%` },
-                      { label: "N Content",   value: `${result.sequence_stats.n_content}%` },
-                      { label: "Quality",     value: result.sequence_stats.quality,
-                        color: result.sequence_stats.quality === "Good" ? "#2e7d32"
-                             : result.sequence_stats.quality === "Moderate" ? "#f57f17"
-                             : "#c62828" },
+                      { label: "Length",     value: `${result.sequence_stats.length} bp` },
+                      { label: "GC Content", value: `${result.sequence_stats.gc_content}%` },
+                      { label: "AT Content", value: `${result.sequence_stats.at_content}%` },
+                      { label: "N Content",  value: `${result.sequence_stats.n_content}%` },
+                      { label: "Quality",    value: result.sequence_stats.quality,
+                        color: result.sequence_stats.quality === "Good"     ? "#22c55e"
+                             : result.sequence_stats.quality === "Moderate" ? "#f59e0b" : "#ef4444" },
                     ].map(s => (
                       <div className="sstat" key={s.label}>
                         <span>{s.label}</span>
@@ -244,20 +253,21 @@ export default function EdnaMatcher() {
                 </div>
               )}
 
-              {/* Mini map */}
+              {/* Map */}
               {result.found_locations?.length > 0 && (
                 <div className="edna-card">
                   <h3>🗺️ Species Distribution — Indian Ocean</h3>
                   <MapContainer center={[12, 78]} zoom={5}
-                    style={{ height: "280px", borderRadius: "10px" }}>
-                    <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                      attribution='&copy; OpenStreetMap' />
+                    style={{ height: "280px", borderRadius: "12px", width: "100%" }}>
+                    <TileLayer
+                      url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+                      attribution='&copy; <a href="https://carto.com/">CARTO</a>'
+                    />
                     {result.found_locations.map((loc, i) => (
                       <CircleMarker key={i} center={[loc[0], loc[1]]} radius={10}
-                        pathOptions={{ color: "#1e90ff", fillOpacity: 0.8, weight: 0 }}>
+                        pathOptions={{ color: "#06b6d4", fillColor: "#06b6d4", fillOpacity: 0.7, weight: 2 }}>
                         <Popup>
-                          <b>{result.species_name}</b><br />
-                          Known habitat location
+                          <b>{result.species_name}</b><br />Known habitat location
                         </Popup>
                       </CircleMarker>
                     ))}
@@ -269,22 +279,24 @@ export default function EdnaMatcher() {
         </div>
       </div>
 
-      {/* History */}
+      {/* ── History ── */}
       <div className="edna-hist-section">
         <button className="btn-toggle" onClick={() => setShowHist(v => !v)}>
           {showHist ? "▲ Hide History" : "▼ Show eDNA Match History"}
         </button>
+
         {showHist && (
-          <div className="edna-card" style={{ marginTop: "1rem" }}>
+          <div className="edna-card" style={{ marginTop: "0.75rem" }}>
             <div className="hist-head">
               <h3>Match History ({history.length})</h3>
-              <div style={{ display: "flex", gap: ".6rem" }}>
-                <input className="filter-input" placeholder="Filter by species…"
+              <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+                <input className="filter-input" placeholder="🔍 Filter species…"
                   value={filter} onChange={e => setFilter(e.target.value)} />
                 {history.length > 0 &&
                   <button className="btn-export" onClick={exportCSV}>⬇ CSV</button>}
               </div>
             </div>
+
             {filtered.length === 0
               ? <p className="empty-msg">No records found.</p>
               : <div className="edna-table-wrap">
@@ -298,14 +310,12 @@ export default function EdnaMatcher() {
                     <tbody>
                       {filtered.map((r, i) => (
                         <tr key={r._id}>
-                          <td>{i+1}</td>
+                          <td>{i + 1}</td>
                           <td>{new Date(r.createdAt).toLocaleString()}</td>
-                          <td><strong>{r.species_name}</strong></td>
-                          <td><em style={{ color: "#90caf9" }}>{r.scientific_name}</em></td>
+                          <td><strong style={{ color: "#e8f4f8" }}>{r.species_name}</strong></td>
+                          <td><em style={{ color: "#06b6d4", opacity: 0.8 }}>{r.scientific_name}</em></td>
                           <td>
-                            <span className="match-chip"
-                              style={{ background: r.match_percentage >= 90 ? "#2e7d32"
-                                                 : r.match_percentage >= 70 ? "#f57f17" : "#c62828" }}>
+                            <span className="match-chip" style={{ background: matchColor(r.match_percentage) }}>
                               {r.match_percentage}%
                             </span>
                           </td>
@@ -316,7 +326,7 @@ export default function EdnaMatcher() {
                           </td>
                           <td>
                             <span className="cons-badge sm"
-                              style={{ background: CONSERVATION_COLOR[r.conservation_status] ?? "#607d8b" }}>
+                              style={{ background: CONSERVATION_COLOR[r.conservation_status] ?? "#4a6a82" }}>
                               {r.conservation_status}
                             </span>
                           </td>
